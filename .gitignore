@@ -1,0 +1,13 @@
+# Build setting
+**/node_modules/
+**/build/
+**/.**
+**/*.log
+**/*.env
+
+# Work space setting
+!.vscode
+
+# Git and GitHub setting
+!.github
+!.gitignore
