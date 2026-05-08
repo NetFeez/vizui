@@ -9,7 +9,7 @@
     "strictNullChecks": true,
     "outDir": "build",
     "rootDir": "src",
-    "types": [],
+    "types": []
   },
   "include": [ "./src/**/*.ts" ]
 }
