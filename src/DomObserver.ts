@@ -1,12 +1,11 @@
 /**
- * @author NetFeez <netfeez.dev@gmail.com>.
- * @description adds an observer to an element
- * @module vizui
+ * @author NetFeez <netfeez.dev@gmail.com>
+ * @description Observes mutation and intersection events on an element.
  * @license Apache-2.0
  */
 
-import Element from "./Element.js";
-import Events from "./Events.js";
+import Element from './Element.js';
+import Events from './Events.js';
 
 export class DomObserver<T extends Element> extends Events<{
     [name in DomObserver.Type]: DomObserver.Params<T>
@@ -20,9 +19,9 @@ export class DomObserver<T extends Element> extends Events<{
         this.intersection = null;
     }
     /**
-     * count total of mutation event listeners
-     * @returns number of event listeners
-    */
+     * Counts the total of mutation event listeners.
+     * @returns The number of mutation event listeners.
+     */
     private mutationCount(): number {
         let count = 0;
         count += this.eventCount('add');
@@ -30,20 +29,20 @@ export class DomObserver<T extends Element> extends Events<{
         return count;
     }
     /**
-     * count total of intersection event listeners
-     * @returns number of event listeners
-    */
+     * Counts the total of intersection event listeners.
+     * @returns The number of intersection event listeners.
+     */
     private intersectionCount(): number {
         let count = 0;
-        count += this.eventCount('add');
-        count += this.eventCount('remove');
+        count += this.eventCount('visible');
+        count += this.eventCount('hidden');
         return count;
     }
     /**
-     * use to handle mutation events
-     * @param mutations list of mutations
-    */
-    private handleMutation(mutations: MutationRecord[]) {
+     * Handles mutation events.
+     * @param mutations The list of mutations.
+     */
+    private handleMutation(mutations: MutationRecord[]): void {
         for (const mutation of mutations) {
             if (mutation.type !== 'childList') continue;
             if ([...mutation.addedNodes].some((node) => node.contains(this.element.root))) {
@@ -55,36 +54,36 @@ export class DomObserver<T extends Element> extends Events<{
         }
     }
     /**
-     * use to handle intersection events
-     * @param entries list of entries
-    */
-    private handleIntersection(entries: IntersectionObserverEntry[]) {
+     * Handles intersection events.
+     * @param entries The list of entries.
+     */
+    private handleIntersection(entries: IntersectionObserverEntry[]): void {
         for (const entry of entries) {
             if (entry.isIntersecting) this.emit('visible', this.element);
             else this.emit('hidden', this.element);
         }
     }
     /**
-     * check if the event is a mutation event
-     * @param type type of event
-     * @returns true if the event is a mutation event
-    */
+     * Checks if the event is a mutation event.
+     * @param type The type of event.
+     * @returns True if the event is a mutation event.
+     */
     private isMutationEvent(type: DomObserver.Type): boolean {
         return type === 'add' || type === 'remove';
     }
     /**
-     * check if the event is an intersection event
-     * @param type type of event
-     * @returns true if the event is an intersection event
-    */
+     * Checks if the event is an intersection event.
+     * @param type The type of event.
+     * @returns True if the event is an intersection event.
+     */
     private isIntersectionEvent(type: DomObserver.Type): boolean {
         return type === 'visible' || type === 'hidden';
     }
     /**
-     * initialize observer if is not initialized
-     * @param type the type of event to check
-    */
-    private initObservers(type: DomObserver.Type) {
+     * Initializes the observer if it is not initialized.
+     * @param type The type of event to check.
+     */
+    private initObservers(type: DomObserver.Type): void {
         if (this.isMutationEvent(type)) {
             if (!this.mutation) {
                 this.mutation = new MutationObserver(this.handleMutation.bind(this));
@@ -96,10 +95,10 @@ export class DomObserver<T extends Element> extends Events<{
         }
     }
     /**
-     * check if the type of observer not have events and disable the observer
-     * @param type the type of event to check
-    */
-    private checkAndFinishObservers(type: DomObserver.Type) {
+     * Checks if the type of observer no longer has events and disables the observer.
+     * @param type The type of event to check.
+     */
+    private checkAndFinishObservers(type: DomObserver.Type): void {
         if (this.isMutationEvent(type)) {
             if (this.mutationCount() === 0 && this.mutation) {
                 this.mutation.disconnect();
@@ -113,55 +112,55 @@ export class DomObserver<T extends Element> extends Events<{
         }
     }
     /**
-     * Add an event listener to the observer.
+     * Adds an event listener to the observer.
      * @param type The type of event to listen for.
      * @param listener The callback function to execute when the event occurs.
      */
-    public on(type: DomObserver.Type, listener: DomObserver.Listener<T>) {
+    public on(type: DomObserver.Type, listener: DomObserver.Listener<T>): void {
         super.on(type, listener);
         this.initObservers(type);
     }
     /**
-     * Add a one-time event listener to the observer.
+     * Adds a one-time event listener to the observer.
      * @param type The type of event to listen for.
      * @param listener The callback function to execute when the event occurs.
      */
-    public once(type: DomObserver.Type, listener: DomObserver.Listener<T>) {
+    public once(type: DomObserver.Type, listener: DomObserver.Listener<T>): void {
         super.once(type, listener);
         this.initObservers(type);
     }
     /**
-     * Remove an event listener from the observer.
+     * Removes an event listener from the observer.
      * @param type The type of event to remove the listener from.
      * @param listener The listener function to remove.
      */
-    public off(type: DomObserver.Type, listener: DomObserver.Listener<T>) {
+    public off(type: DomObserver.Type, listener: DomObserver.Listener<T>): void {
         super.off(type, listener);
         this.checkAndFinishObservers(type);
     }
     /**
-     * Remove a one-time event listener from the observer.
+     * Removes a one-time event listener from the observer.
      * @param type The type of event to remove the listener from.
      * @param listener The listener function to remove.
      */
-    public offOnce(type: DomObserver.Type, listener: DomObserver.Listener<T>) {
+    public offOnce(type: DomObserver.Type, listener: DomObserver.Listener<T>): void {
         super.offOnce(type, listener);
         this.checkAndFinishObservers(type);
     }
     /**
-     * Remove all event listeners of a specific type.
+     * Removes all event listeners of a specific type.
      * @param type The type of event to remove all listeners from.
      */
-    public ofAll(type: DomObserver.Type) {
+    public ofAll(type: DomObserver.Type): void {
         super.offAll(type);
         this.checkAndFinishObservers(type);
     }
     /**
-     * Remove all one-time event listeners of a specific type.
+     * Removes all one-time event listeners of a specific type.
      * @param type The type of event to remove all listeners from.
      */
-    public ofAllOnce(type: DomObserver.Type) {
-        super.offAll(type);
+    public ofAllOnce(type: DomObserver.Type): void {
+        super.offAllOnce(type);
         this.checkAndFinishObservers(type);
     }
 }

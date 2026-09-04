@@ -1,57 +1,55 @@
 /**
- * @author NetFeez <netfeez.dev@gmail.com>.
- * @description Vizui is a module to create web applications SPA with js/ts.
- * @module vizui
+ * @author NetFeez <netfeez.dev@gmail.com>
+ * @description App composition root: wires router, components and root element.
  * @license Apache-2.0
  */
-import Element from "../Element.js";
-import Events from "../Events.js";
-import _Router from "./Router.js";
-import AppComponent from "./AppComponent.js";
+import Element from '../Element.js';
+import Events from '../Events.js';
+import _Router from './Router.js';
 
-export { default as Router } from "./Router.js";
+export { default as Router } from './Router.js';
 
 export class App extends Events<App.eventMap> {
-    private static instance: App;
+    private static vInstance: App;
+
     public readonly root: Element<'div'>;
     public readonly router: App.Router;
-    private isInit: boolean = false;
-    private components: Map<string, AppComponent> = new Map();
+    private vInit = false;
+    private vComponents: Map<string, Element> = new Map();
     /**
-     * Private constructor for the App class.
+     * Creates an instance of App.
      * @param rootElement The root element of the application.
      * @param components The components of the application.
      */
-    private constructor(rootElement: string | HTMLDivElement | Element, components?: App.ComponentObject) {  super();
+    private constructor(rootElement: string | HTMLDivElement | Element, components?: App.ComponentObject) { super();
         if (rootElement instanceof Element) this.root = rootElement;
         else if (rootElement instanceof HTMLDivElement) this.root = new Element(rootElement);
         else if (typeof rootElement === 'string') {
-            const root = Element.get(rootElement); Element.new('div', null, { id: 'root' });
+            const root = Element.get(rootElement);
             if (!root) throw new Error('root element not found');
             this.root = root;
         } else throw new Error('[App] root must be a Element an string or HTMLDivElement');
         this.router = new App.Router();
-        if (components) this.components = new Map(Object.entries(components));
-        console.log('[App] root', this.root);
+        if (components) this.vComponents = new Map(Object.entries(components));
     }
     /**
-     * Get the instance of the App class.
+     * Get the singleton instance of the App class.
      * @param rootElement The root element of the application.
      * @param components The components of the application.
      * @returns The instance of the App class.
      */
     public static getInstance(rootElement?: string | Element | HTMLDivElement, components?: App.ComponentObject): App {
-        if (App.instance) return App.instance;
+        if (App.vInstance) return App.vInstance;
         if (!rootElement) throw new Error('rootElement is required to init App singleton');
-        App.instance = new App(rootElement, components);
-        return App.instance;
+        App.vInstance = new App(rootElement, components);
+        return App.vInstance;
     }
     /**
      * Set the components of the application.
      * @param component The components to set.
      */
-    public setComponents(component: App.ElementObject) {
-        if (this.isInit) throw new Error('[setComponent]: App is already initialized');
+    public setComponents(component: App.ElementObject): void {
+        if (this.vInit) throw new Error('[setComponent]: App is already initialized');
         for (const key in component) {
             this.addComponent(key, component[key]);
         }
@@ -59,27 +57,27 @@ export class App extends Events<App.eventMap> {
     /**
      * Add a component to the application.
      * @param name The name of the component.
-     * @param component The component to add.
+     * @param element The element of the component.
      */
-    public addComponent(name: string, component: Element) {
-        if (this.isInit) throw new Error('[addComponent]: App is already initialized');
-        this.components.set(name, new AppComponent(component));
+    public addComponent(name: string, element: Element): void {
+        if (this.vInit) throw new Error('[addComponent]: App is already initialized');
+        this.vComponents.set(name, element);
     }
     /**
      * Delete a component from the application.
      * @param name The name of the component to delete.
      */
-    public delComponent(name: string) {
-        if (this.isInit) throw new Error('[delComponent]: App is already initialized');
-        this.components.delete(name);
+    public delComponent(name: string): void {
+        if (this.vInit) throw new Error('[delComponent]: App is already initialized');
+        this.vComponents.delete(name);
     }
     /**
      * Get a component from the application.
      * @param name The name of the component to get.
      * @returns The component.
      */
-    public getComponent(name: string): AppComponent {
-        const component = this.components.get(name);
+    public getComponent(name: string): Element {
+        const component = this.vComponents.get(name);
         if (!component) throw new Error(`[getComponent]: Component "${name}" not found`);
         return component;
     }
@@ -114,9 +112,9 @@ export class App extends Events<App.eventMap> {
     /**
      * Initialize the application.
      */
-    public init() {
-        if (this.isInit) return;
-        this.isInit = true;
+    public init(): void {
+        if (this.vInit) return;
+        this.vInit = true;
         this.on('render', this.router.renderManager.bind(this.router, this));
         this.router.on('change', () => this.emit('render'));
         this.emit('render');
@@ -136,8 +134,8 @@ export namespace App {
         [key: string]: Element;
     }
     export interface ComponentObject {
-        [key: string]: AppComponent;
-    };
+        [key: string]: Element;
+    }
     export interface WorkerOptions {
         type?: 'module' | 'classic';
         scope?: string;

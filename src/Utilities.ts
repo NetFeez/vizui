@@ -1,7 +1,6 @@
 /**
- * @author NetFeez <netfeez.dev@gmail.com>.
- * @description append utilities to vizui.
- * @module vizui
+ * @author NetFeez <netfeez.dev@gmail.com>
+ * @description General-purpose utilities.
  * @license Apache-2.0
  */
 

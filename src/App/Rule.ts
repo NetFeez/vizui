@@ -1,17 +1,16 @@
 /**
- * @author NetFeez <netfeez.dev@gmail.com>.
- * @description add the rule class to the app.
- * @module vizui
+ * @author NetFeez <netfeez.dev@gmail.com>
+ * @description URL rule with expression matching, params and auth guard.
  * @license Apache-2.0
-*/
+ */
 
 import App from './App.js';
 
 export class Rule {
     public urlRule: string;
     public expression: RegExp;
-    private authExec: Rule.authenticator;
-    private renderExec: Rule.renderer;
+    private vAuthExec: Rule.authenticator;
+    private vRenderExec: Rule.renderer;
     /**
      * Creates a new rule.
      * @param urlRule The url rule.
@@ -22,35 +21,39 @@ export class Rule {
         urlRule = !urlRule.startsWith('/') ? `/${urlRule}` : urlRule;
         urlRule = urlRule.endsWith('/') ? urlRule.slice(0, -1) : urlRule;
         this.urlRule = urlRule;
-        this.expression = this.createExpression(urlRule);
-        this.renderExec = renderExec;
-        this.authExec = authExec ?? (() => true);
+        this.expression = this.vCreateExpression(urlRule);
+        this.vRenderExec = renderExec;
+        this.vAuthExec = authExec ?? (() => true);
     }
     /**
      * Executes the rule.
      * @param app The app.
+     * @param url The url to test.
      */
     public async exec(app: App, url?: string): Promise<void> {
-        if (!this.testAuth()) return;
+        if (!await this.testAuth()) return;
         const params = this.getParams(url ?? app.router.page);
-        await this.renderExec(params, app);
+        await this.vRenderExec(params, app);
     }
     /**
-     * Tests the rule.
+     * Tests the rule against a url.
      * @param url The url to test.
+     * @returns True if the rule matches.
      */
     public test(url: string): boolean {
         return this.expression.test(url);
     }
     /**
      * Tests the authentication.
+     * @returns True if authenticated.
      */
     public async testAuth(): Promise<boolean> {
-        return !this.authExec || await this.authExec();
+        return !this.vAuthExec || await this.vAuthExec();
     }
     /**
      * Gets the parameters from the url.
      * @param url The url.
+     * @returns The parameters.
      */
     public getParams(url: string): Rule.ruleParams {
         const match = this.expression.exec(url);
@@ -58,10 +61,11 @@ export class Rule {
         return { ...match.groups };
     }
     /**
-     * Creates the expression.
+     * Creates the expression regex from a url rule.
      * @param urlRule The url rule.
+     * @returns The compiled regex.
      */
-    private createExpression(urlRule: string): RegExp {
+    private vCreateExpression(urlRule: string): RegExp {
         const validators = {
             paramRequired: /^\$(?<param>(?!\$).+)$/,
             paramOptional: /^\$\?(?<param>(?!\$).+)$/,
@@ -70,7 +74,7 @@ export class Rule {
         const zones = urlRule.split('/').slice(1);
         let generated = '^';
 
-        for (let index = 0; index < zones.length; index ++) {
+        for (let index = 0; index < zones.length; index++) {
             const zone = zones[index];
 
             if (zone == '*') {

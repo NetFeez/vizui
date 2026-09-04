@@ -6,7 +6,6 @@
  */
 
 export { default } from './App/App.js'
-export { default as Ajax } from './Ajax.js';
 export { default as Events } from './Events.js';
 export { default as Element } from './Element.js';
 export { default as DynamicCSS } from './DynamicCSS.js';
