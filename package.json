@@ -2,21 +2,12 @@
   "name": "vizui",
   "version": "1.0.0",
   "description": "a simple module to create single page applications",
-  "main": "build/Vizui.js",
+  "main": "dist/index.js",
   "type": "module",
-  "exports": {
-    ".": {
-      "import": "./build/Vizui.js",
-      "types": "./build/Vizui.d.ts"
-    },
-    "./*": {
-      "import": "./build/*.js",
-      "types": "./build/*.d.ts"
-    }
-  },
   "scripts": {
-    "dev": "tsc --watch",
-    "build": "bash scripts/build.sh"
+    "dev": "npx tsc --watch",
+    "dependencies": "npm install; npx dep install",
+    "build": "npx tsc"
   },
   "keywords": [
     "Vizui",
@@ -40,6 +31,7 @@
   ],
   "license": "Apache-2.0",
   "devDependencies": {
+    "depflow": "^3.0.0-dev.10",
     "typescript": "^7.0.2"
   }
 }

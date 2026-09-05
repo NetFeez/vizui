@@ -1,0 +1,28 @@
+{
+  "$schema": ".depflow/schema.json",
+  "flowFolder": ".depflow",
+  "outDir": "dist",
+  "tsconfig": null,
+  "importmap": null,
+  "actions": {},
+  "resolver": {},
+  "dependencies": [
+    {
+      "name": "NetFeez/common",
+      "repo": "https://github.com/NetFeez/common.git",
+      "tag": "6cfb686",
+      "builder": [
+        {
+          "extract": {
+            "src/events/*.ts": {
+              "to": "src/events",
+              "map": "src/events"
+            }
+          }
+        }
+      ],
+      "resolver": {}
+    }
+  ],
+  "npmDependencies": []
+}
