@@ -3,8 +3,9 @@
  * @description App composition root: wires router, components and root element.
  * @license Apache-2.0
  */
-import Element from '../Element.js';
-import Events from '../Events.js';
+import Element from '../core/element/Element.js';
+import Events from '../events/Events.js';
+
 import _Router from './Router.js';
 
 export { default as Router } from './Router.js';
@@ -12,7 +13,7 @@ export { default as Router } from './Router.js';
 export class App extends Events<App.eventMap> {
     private static vInstance: App;
 
-    public readonly root: Element<'div'>;
+    public readonly root: Element<HTMLElement>;
     public readonly router: App.Router;
     private vInit = false;
     private vComponents: Map<string, Element> = new Map();
@@ -21,9 +22,9 @@ export class App extends Events<App.eventMap> {
      * @param rootElement The root element of the application.
      * @param components The components of the application.
      */
-    private constructor(rootElement: string | HTMLDivElement | Element, components?: App.ComponentObject) { super();
+    private constructor(rootElement: string | HTMLElement | Element, components?: App.ComponentObject) { super();
         if (rootElement instanceof Element) this.root = rootElement;
-        else if (rootElement instanceof HTMLDivElement) this.root = new Element(rootElement);
+        else if (rootElement instanceof HTMLElement) this.root = new Element(rootElement);
         else if (typeof rootElement === 'string') {
             const root = Element.get(rootElement);
             if (!root) throw new Error('root element not found');

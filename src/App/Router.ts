@@ -5,8 +5,9 @@
  * @license Apache-2.0
  */
 
+import Events from "../events/Events.js";
+
 import App from "./App.js";
-import Events from "../Events.js";
 import _Rule from "./Rule.js";
 
 export { default as Rule } from "./Rule.js";
