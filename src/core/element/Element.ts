@@ -181,11 +181,13 @@ export class Element<T extends Element.ExtendedHtmlElement = HTMLElement> extend
     public bindAttribute(name: string, store: Store<string | null>): this {
         let subscriptions = this.reactiveSubscriptions.get(store);
         if (!subscriptions) this.reactiveSubscriptions.set(store, subscriptions = new Set());
-        const unsubscribe = store.subscribe((value) => {
+        const apply = (value: string | null): void => {
             if (value === null || value === undefined) this.root.removeAttribute(name);
             else this.root.setAttribute(name, value);
-        });
+        };
+        const unsubscribe = store.subscribe(apply);
         subscriptions.add({ type: 'attribute', unsubscribe });
+        apply(store.state);
         return this;
     }
 
