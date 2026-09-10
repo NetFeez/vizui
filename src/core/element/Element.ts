@@ -424,11 +424,6 @@ export namespace Element {
         // Future metadata saving based on symbols
     }
 
-    /** Reactive event map */
-    export interface ReactiveEvents extends Events.EventMap {
-        'attribute:changed': [name: string, value: string | null, last: string | null];
-    }
-
     /** The typed event listener map of an HTMLElement. **/
     export type EventMap<T extends HTMLElement> = {
         [Key in keyof HTMLElementEventMap]: (this: Element<T>, event: HTMLElementEventMap[Key]) => void;
