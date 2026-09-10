@@ -9,22 +9,20 @@ import { APPENDABLE } from '../symbols.js';
 import Events from '../../events/Events.js';
 import DomObserver from './DomObserver.js';
 import Node from './Node.js';
+import Store from '../state/Store.js';
 
 const OBSERVER_MAP = Symbol('vizui.element/observer');
-const REACTIVE_MAP = Symbol('vizui.element/reactive');
-const ELEMENT_MANIPULATED = Symbol('vizui.element/manipulated-attributes');
+// const REACTIVE_MAP = Symbol('vizui.element/reactive');
 
 export class Element<T extends Element.ExtendedHtmlElement = HTMLElement> extends Node<T> {
-    public static [OBSERVER_MAP] = new WeakMap<HTMLElement, DomObserver<any>>();
-    public static [REACTIVE_MAP] = new WeakMap<HTMLElement, Events.Emitter<Element.ReactiveEvents>>();
+    public static [OBSERVER_MAP]: Element.Storage.Observer = new WeakMap();
+    // public static [REACTIVE_MAP]: Element.Storage.AttributeSubscriptions = new WeakMap();
 
     public static body = document.body;
     public static head = document.head;
 
     /** The mutation/intersection observer bound to this element. **/
     public readonly observer: DomObserver<T>;
-
-    private readonly vReactiveEmitter: Events.Emitter<Element.ReactiveEvents>;
 
     /**
      * Wraps an existing HTMLElement.
@@ -39,19 +37,10 @@ export class Element<T extends Element.ExtendedHtmlElement = HTMLElement> extend
         if (!observer) Element[OBSERVER_MAP].set(this.root, observer = new DomObserver(this.root));
         this.observer = observer;
 
-        let reactivity = Element[REACTIVE_MAP].get(this.root);
-        if (!reactivity) Element[REACTIVE_MAP].set(this.root, reactivity = new Events.Emitter());
-        this.vReactiveEmitter = reactivity;
-
-        this.root[ELEMENT_MANIPULATED] = this.root.setAttribute
-        this.root.setAttribute = (name: string, value: string) => {
-            const last = this.root.getAttribute(name);
-            this.root[ELEMENT_MANIPULATED]!.call(this.root, name, value);
-            this.vReactiveEmitter.emit('attribute:changed', name, value, last);
-        };
+        // let reactive = Element[REACTIVE_MAP].get(this.root);
+        // if (!reactive) Element[REACTIVE_MAP].set(this.root, reactive = new Map());
+        // this.reactiveAttributeSubscriptions = reactive;
     }
-
-    public get reactive(): Events<Element.ReactiveEvents> { return this.vReactiveEmitter; }
 
     /** The scroll height of the element in pixels. **/
     public get scrollHeight(): number { return this.root.scrollHeight; }
@@ -134,7 +123,7 @@ export class Element<T extends Element.ExtendedHtmlElement = HTMLElement> extend
      * @returns This element, for chaining.
      */
     public addClass(...classList: string[]): this {
-        classList = this.sanitizeClassList(classList);
+        classList = Element.sanitizeClassList(classList);
         this.root.classList.add(...classList);
         return this;
     }
@@ -145,7 +134,7 @@ export class Element<T extends Element.ExtendedHtmlElement = HTMLElement> extend
      * @returns This element, for chaining.
      */
     public removeClass(...classList: string[]): this {
-        classList = this.sanitizeClassList(classList);
+        classList = Element.sanitizeClassList(classList);
         this.root.classList.remove(...classList);
         return this;
     }
@@ -169,53 +158,44 @@ export class Element<T extends Element.ExtendedHtmlElement = HTMLElement> extend
     }
 
     /**
-     * Adds an event listener to this element and tracks it for teardown.
-     * @param name - The name of the event.
-     * @param listener - The callback to execute.
-     * @param options - The listener options.
-     * @returns This element, for chaining.
-     */
-    public override on<E extends keyof Element.EventMap<T>>(name: E, listener: Element.EventMap<T>[E], options?: Node.Tracker.Options): this;
-    public override on(name: string, listener: Node.Listener<T>, options?: Node.Tracker.Options): this;
-    public override on(name: string, listener: Node.Listener<T>, options?: Node.Tracker.Options): this {
-        return super.on(name, listener, options);
-    }
-
-    /**
-     * Adds a one-time event listener to this element and tracks it for teardown.
-     * @param name - The name of the event.
-     * @param listener - The callback to execute.
-     * @param options - The listener options.
-     * @returns This element, for chaining.
-     */
-    public override once<E extends keyof Element.EventMap<T>>(name: E, listener: Element.EventMap<T>[E], options?: Node.Tracker.Options): this;
-    public override once(name: string, listener: Node.Listener<T>, options?: Node.Tracker.Options): this;
-    public override once(name: string, listener: Node.Listener<T>, options?: Node.Tracker.Options): this {
-        return super.once(name, listener, options);
-    }
-
-    /**
-     * Removes a previously added event listener.
-     * @param name - The name of the event.
-     * @param listener - The listener to remove.
-     * @param options - The listener options.
-     * @returns This element, for chaining.
-     */
-    public override off<E extends keyof Element.EventMap<T>>(name: E, listener: Element.EventMap<T>[E], options?: Node.Tracker.Options): this;
-    public override off(name: string, listener: Node.Listener<T>, options?: Node.Tracker.Options): this;
-    public override off(name: string, listener: Node.Listener<T>, options?: Node.Tracker.Options): this {
-        return super.off(name, listener, options);
-    }
-
-    /**
      * Sets a single attribute.
      * @param name - The name of the attribute.
      * @param value - The value of the attribute.
      * @returns This element, for chaining.
      */
-    public setAttribute(name: string, value: string): this {
+    public setAttribute(name: string, value: string | Store<string | null>): this {
+        if (value instanceof Store) return this.bindAttribute(name, value);
         this.root.setAttribute(name, value);
         return this;
+    }
+
+    /**
+     * Binds a reactive attribute to the element.
+     * @param name - The name of the attribute.
+     * @param store - The store to bind to the attribute.
+     * @param readonly - Whether the attribute is readonly.
+     * @returns This element, for chaining.
+     */
+    public bindAttribute(name: string, store: Store<string | null>): this {
+        let subscriptions = this.reactiveSubscriptions.get(store);
+        if (!subscriptions) this.reactiveSubscriptions.set(store, subscriptions = new Set());
+        const unsubscribe = store.subscribe((value) => {
+            if (value === null || value === undefined) this.root.removeAttribute(name);
+            else this.root.setAttribute(name, value);
+        });
+        subscriptions.add({ type: 'attribute', unsubscribe });
+        return this;
+    }
+
+    /**
+     * Unbinds a reactive attribute from the element.
+     * @param name - The name of the attribute.
+     * @returns This element, for chaining.
+     */
+    public unbindAttribute(store: Store<string | null>): this {
+        const subscriptions = this.reactiveSubscriptions.get(store);
+        if (!subscriptions) return this;
+        return this.offReactive(store, 'attribute');
     }
 
     /**
@@ -259,54 +239,42 @@ export class Element<T extends Element.ExtendedHtmlElement = HTMLElement> extend
     }
 
     /**
-     * Gets an element from the DOM by selector.
-     * @param selector - The selector to use.
-     * @returns The element, or null if not found.
-     *
-     * @example
-     * ```ts
-     * const div = Element.get<HTMLDivElement>('div#my-div');
-     * const input = Element.get<HTMLInputElement>('input[name="my-input"]');
-     * ```
+     * Adds an event listener to this element and tracks it for teardown.
+     * @param name - The name of the event.
+     * @param listener - The callback to execute.
+     * @param options - The listener options.
+     * @returns This element, for chaining.
      */
-    public static get<T extends HTMLElement = HTMLElement>(selector: string): Element<T> | null {
-        const selection = document.querySelector<T>(selector);
-        return selection ? new Element(selection) : null;
+    public override on<E extends keyof Element.EventMap<T>>(name: E, listener: Element.EventMap<T>[E], options?: Node.Tracker.Options): this;
+    public override on(name: string, listener: Node.Listener<T>, options?: Node.Tracker.Options): this;
+    public override on(name: string, listener: Node.Listener<T>, options?: Node.Tracker.Options): this {
+        return super.on(name, listener, options);
     }
 
     /**
-     * Creates a new element.
-     * @param tag - The type of element to create.
-     * @param options - The options to apply to the element.
-     * @returns The new element.
-     *
-     * @example
-     * ```ts
-     * const div = Element.new('div', {
-     *     text: 'Hello, world!',
-     *     attributes: {
-     *         id: 'my-div',
-     *         class: 'my-class',
-     *         other: 'value'
-     *     }
-     * });
-     * ```
+     * Adds a one-time event listener to this element and tracks it for teardown.
+     * @param name - The name of the event.
+     * @param listener - The callback to execute.
+     * @param options - The listener options.
+     * @returns This element, for chaining.
      */
-    public static new<T extends keyof Element.Type>(tag: T, options: Element.CreationOptions<Element.Type[T]> = {}): Element<Element.Type[T]> {
-        const root = document.createElement(tag);
-        const element = new Element(root);
-        this.assignCreationOptions(element, options);
-        return element;
+    public override once<E extends keyof Element.EventMap<T>>(name: E, listener: Element.EventMap<T>[E], options?: Node.Tracker.Options): this;
+    public override once(name: string, listener: Node.Listener<T>, options?: Node.Tracker.Options): this;
+    public override once(name: string, listener: Node.Listener<T>, options?: Node.Tracker.Options): this {
+        return super.once(name, listener, options);
     }
 
     /**
-     * Creates a new element from a structure.
-     * @param structure - The structure of the element.
-     * @returns The new element.
-     * @deprecated Use {@link Element.new} instead.
+     * Removes a previously added event listener.
+     * @param name - The name of the event.
+     * @param listener - The listener to remove.
+     * @param options - The listener options.
+     * @returns This element, for chaining.
      */
-    public static structure<T extends keyof Element.Type>(structure: Element.Structure<T>): Element<Element.Type[T]> {
-        return this.new(structure.tag, { ...structure });
+    public override off<E extends keyof Element.EventMap<T>>(name: E, listener: Element.EventMap<T>[E], options?: Node.Tracker.Options): this;
+    public override off(name: string, listener: Node.Listener<T>, options?: Node.Tracker.Options): this;
+    public override off(name: string, listener: Node.Listener<T>, options?: Node.Tracker.Options): this {
+        return super.off(name, listener, options);
     }
 
     /**
@@ -355,23 +323,105 @@ export class Element<T extends Element.ExtendedHtmlElement = HTMLElement> extend
      * @remarks
      * Used internally by {@link Element.new}; not intended for direct use.
      */
-    private static addEvents<T extends HTMLElement>(element: Element<T>, events: Partial<Element.EventMap<T>>): void;
-    private static addEvents<T extends HTMLElement>(element: Element<T>, events: Partial<Element.EventMap.Generics<T>>): void;
-    private static addEvents<T extends HTMLElement>(element: Element<T>, events: Partial<Element.EventMap.Generics<T>>): void {
+    private static addEvents<T extends Element.ExtendedHtmlElement>(element: Element<T>, events: Partial<Element.EventMap<T>>): void;
+    private static addEvents<T extends Element.ExtendedHtmlElement>(element: Element<T>, events: Partial<Element.EventMap.Generics<T>>): void;
+    private static addEvents<T extends Element.ExtendedHtmlElement>(element: Element<T>, events: Partial<Element.EventMap.Generics<T>>): void {
         for (const [name, listener] of Object.entries(events)) {
             if (!listener) throw new Error('the event has no listener.');
             element.on(name, listener);
         }
     }
 
-    private sanitizeClassList(classList: string[]): string[] {
+    private static sanitizeClassList(classList: string[]): string[] {
         return classList.map((entry) => entry.trim().split(/\s+/)).flat();
+    }
+
+    /**
+     * Gets an element from the DOM by selector.
+     * @param selector - The selector to use.
+     * @returns The element, or null if not found.
+     *
+     * @example
+     * ```ts
+     * const div = Element.get<HTMLDivElement>('div#my-div');
+     * const input = Element.get<HTMLInputElement>('input[name="my-input"]');
+     * ```
+     */
+    public static get<T extends Element.ExtendedHtmlElement = HTMLElement>(selector: string): Element<T> | null {
+        const selection = document.querySelector<T>(selector);
+        return selection ? new Element(selection) : null;
+    }
+
+    /**
+     * Creates a new element.
+     * @param tag - The type of element to create.
+     * @param options - The options to apply to the element.
+     * @returns The new element.
+     *
+     * @example
+     * ```ts
+     * const div = Element.new('div', {
+     *     text: 'Hello, world!',
+     *     attributes: {
+     *         id: 'my-div',
+     *         class: 'my-class',
+     *         other: 'value'
+     *     }
+     * });
+     * ```
+     */
+    public static new<T extends keyof Element.Type>(tag: T, options: Element.CreationOptions<Element.Type[T]> = {}): Element<Element.Type[T]> {
+        const root = document.createElement(tag);
+        const element = new Element(root);
+        this.assignCreationOptions(element, options);
+        return element;
+    }
+    /**
+     * Creates a new element.
+     * @param tag - The type of element to create.
+     * @param options - The options to apply to the element.
+     * @returns The new element.
+     *
+     * @example
+     * ```ts
+     * const div = Element.create('div', {
+     *     text: 'Hello, world!',
+     *     attributes: {
+     *         id: 'my-div',
+     *         class: 'my-class',
+     *         other: 'value'
+     *     }
+     * });
+     * ```
+     */
+    public static create<T extends keyof Element.Type>(tag: T, options: Element.CreationOptions<Element.Type[T]> = {}): Element<Element.Type[T]> {
+        return this.new(tag, options);
+    }
+
+    /**
+     * Creates a new element from a structure.
+     * @param structure - The structure of the element.
+     * @returns The new element.
+     * @deprecated Use {@link Element.new} instead.
+     */
+    public static structure<T extends keyof Element.Type>(structure: Element.Structure<T>): Element<Element.Type[T]> {
+        return this.new(structure.tag, { ...structure });
     }
 }
 
 export namespace Element {
+    export namespace Storage {
+        export namespace AttributeSubscriptions {
+            export type Entry<T extends HTMLElement> = Map<string, Set<{
+                unsubscribe: () => void;
+                listener?: (_: T, name: string, value: string | null, last: string | null) => void;
+            }>>;
+        }
+        export type Observer = WeakMap<HTMLElement, DomObserver<any>>;
+        export type AttributeSubscriptions = WeakMap<HTMLElement, AttributeSubscriptions.Entry<any>>;
+    }
     export interface ExtendedHtmlElement extends HTMLElement {
-        [ELEMENT_MANIPULATED]?: HTMLElement['setAttribute'];
+        // Future metadata saving based on symbols
     }
 
     /** Reactive event map */
@@ -400,7 +450,7 @@ export namespace Element {
     }
 
     /** The children accepted by an Element. **/
-    export type ChildType = Node.NodeType;
+    export type ChildType = Element<any> | Node.NodeType;
 
     /** The options applied to an element at creation time. **/
     export interface CreationOptions<T extends HTMLElement> {

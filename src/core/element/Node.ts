@@ -22,10 +22,10 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
     public readonly root: T;
 
     /** The event tracker for this node. **/
-    private eventTracker: Node.Storage.Tracking.Entry;
+    protected eventTracker: Node.Storage.Tracking.Entry;
 
     /** The reactive map for this node. **/
-    private reactiveSubscriptions: Node.Storage.Reactivity.Entry;
+    protected reactiveSubscriptions: Node.Storage.Reactivity.Entry;
 
     /**
      * Wraps an existing DOM node.
@@ -229,9 +229,13 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
      * @param store - The store to bind to the node.
      * @returns This node, for chaining.
      */
-    public offReactive(store: Store<unknown>): this {
-        const unities = this.reactiveSubscriptions.get(store);
-        if (unities) unities.forEach((unsubscribe) => unsubscribe());
+    public offReactive(store: Store<any>, filter?: Node.Subscription.Type | Node.Subscription.Filter): this {
+        const subscriptions = this.reactiveSubscriptions.get(store);
+        if (subscriptions) subscriptions.forEach((unsubscribe) => {
+            if (typeof filter === 'string' && unsubscribe.type !== filter) return;
+            if (typeof filter === 'function' && !filter(unsubscribe)) return;
+            unsubscribe.unsubscribe();
+        });
         this.reactiveSubscriptions.delete(store);
         return this;
     }
@@ -277,7 +281,7 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
         const unsubscribe = store.subscribe(handler);
         let subscriptions = this.reactiveSubscriptions.get(store)
         if (!subscriptions) this.reactiveSubscriptions.set(store, subscriptions = new Set());
-        subscriptions.add(unsubscribe);
+        subscriptions.add({ type: 'child', unsubscribe });
         return node;
     }
 
@@ -338,10 +342,17 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
 
 export namespace Node {
     export import Tracker = EventTracker;
-
+    export namespace Subscription {
+        export type Type = 'child' | 'attribute' | (string & {});
+        export type Filter = (subscription: Subscription) => boolean;
+    }
+    export interface Subscription {
+        type: Subscription.Type;
+        unsubscribe: Store.Unsubscribe;
+    };
     export namespace Storage {
         export namespace Reactivity {
-            export type Subscriptions = Set<Store.Unsubscribe>;
+            export type Subscriptions = Set<Subscription>;
             export type Entry = WeakMap<Store<any>, Subscriptions>;
         };
         export namespace Tracking {
