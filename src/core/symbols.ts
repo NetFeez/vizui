@@ -8,11 +8,11 @@
 // ========== Core Symbols ==========
 //
 
-/** Marks an object as a Node. **/
-export const NODE = Symbol('vizui.node');
-
 /** Marks an object as appendable. **/
 export const APPENDABLE = Symbol('vizui.appendable');
+
+/** Marks an object as a Node. **/
+export const NODE = Symbol('vizui.node');
 
 /** Marks an object as an Element. **/
 export const ELEMENT = Symbol('vizui.element');
@@ -20,15 +20,27 @@ export const ELEMENT = Symbol('vizui.element');
 /** Marks an object as a Component. **/
 export const COMPONENT = Symbol('vizui.component');
 
+/** Marks an object as a View. **/
+export const VIEW = Symbol('vizui.view');
+
+/** Marks an object as a Layout. **/
+export const LAYOUT = Symbol('vizui.layout');
+
 /** The core discrimination symbols, grouped. **/
 export const CORE: {
+    NODE: typeof NODE;
     APPENDABLE: typeof APPENDABLE;
     ELEMENT: typeof ELEMENT;
     COMPONENT: typeof COMPONENT;
+    VIEW: typeof VIEW;
+    LAYOUT: typeof LAYOUT;
 } = {
+    NODE,
     APPENDABLE,
     ELEMENT,
     COMPONENT,
+    VIEW,
+    LAYOUT
 }
 
 //

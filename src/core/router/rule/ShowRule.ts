@@ -6,17 +6,16 @@
  * @license Apache-2.0
  */
 
-import { RULE } from '../../symbols.js';
+import { COMPONENT, ELEMENT, RULE, VIEW } from '../../symbols.js';
 
 import Pipeline from '../pipeline/Pipeline.js';
 
-import type Element from '../../element/Element.js';
 import type Guard from '../pipeline/Guard.js';
 import type Tracker from '../Tracker.js';
 import type Router from '../Router.js';
 
-import Component from '../../component/Component.js';
-import type View from '../../component/View.js';
+import Element from '../../element/Element.js';
+import View from '../../component/View.js';
 
 import Rule from './Rule.js';
 
@@ -51,37 +50,39 @@ export class ShowRule extends Rule<ShowRule.Content> {
     }
 
     /**
-     * Resolves the view instance, instantiating lazy factories.
-     * @returns The resolved view.
-     * @throws When the content does not produce a Component.
+     * Resolves the view or element tree, instantiating lazy factories.
+     * @returns The resolved view or element tree.
+     * @throws When the content does not produce a View or Element.
      */
-    public async resolve(): Promise<View> {
+    public async resolve(): Promise<View | Element> {
         const content = this.vContent;
-        const view = typeof content === 'function' ? await content() : content;
-        if (!(view instanceof Component)) throw new Error(`[ShowRule] Invalid view for template "${this.vTemplate}": expected a Component, got ${typeof view}.`);
-        return view;
+        const resolved = typeof content === 'function' ? await content() : content;
+        if (COMPONENT in resolved || ELEMENT in resolved) return resolved;
+        throw new Error(`[ShowRule] The content of "${this.vTemplate}" must be a View, Element or lazy factory.`);
     }
 
     public override async exec(entry: Router.Entry, state: Guard.State, target: Element,): Promise<Guard.Result | undefined> {
         return await this.pipeline.run(entry, state, async (pipeState) => {
-            const view = await this.resolve();
-            if (this.vLoader) {
-                const data = await this.vLoader(entry);
-                if (view.render) await view.render(data);
-            } else if (view.load) {
-                await view.load(entry);
-                if (view.render) await view.render();
-            } else if (view.render) await view.render();
             const renderer = pipeState.renderer;
             if (!renderer) throw new Error(`[ShowRule] No renderer available to mount "${this.vTemplate}".`);
+            const view = await this.resolve();
+            if (VIEW in view) {
+                if (this.vLoader) {
+                    const data = await this.vLoader(entry);
+                    if (view.render) await view.render(data);
+                } else if (view.load) {
+                    await view.load(entry);
+                    if (view.render) await view.render();
+                } else if (view.render) await view.render();
+            }
             renderer.mount(view, target);
         });
     }
 }
 
 export namespace ShowRule {
-    /** The view kinds a show route accepts: instances or lazy factories. **/
-    export type Content = View | (() => View | Promise<View>);
+    /** The content kinds a show route accepts: views, element trees or lazy factories. **/
+    export type Content = View | Element | (() => View | Element | Promise<View | Element>);
 }
 
 export default ShowRule;

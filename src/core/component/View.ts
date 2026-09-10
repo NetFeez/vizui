@@ -4,6 +4,8 @@
  * @license Apache-2.0
  */
 
+import { VIEW } from '../symbols.js';
+
 import Component from './Component.js';
 import Events from '../../events/Events.js';
 
@@ -13,6 +15,8 @@ import Events from '../../events/Events.js';
  * @template EventMap - The event map of the view.
  */
 export abstract class View<T extends Component.Type = HTMLDivElement, eventMap extends Events.EventMap = Events.EventMap> extends Component<T, eventMap> {
+    public readonly [VIEW] = true;
+
     /**
      * Loads data for the view given a route entry. Optional when the route
      * declares its own loader through `ShowRule.load`.

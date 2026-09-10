@@ -21,7 +21,16 @@ export interface Renderer {
      * @param outlet - The outlet element to mount into.
      * @returns The outlet.
      */
-    mount(component: Component<any>, outlet: Element): Element;
+    mount(component: Component<any> | Element, outlet: Element): Element;
+
+    /**
+     * Mounts an element tree into an outlet, tearing down the previous mount there.
+     * Elements mount without lifecycle hooks (teardown is handled by `outlet.clean()`).
+     * @param element - The element tree to mount.
+     * @param outlet - The outlet element to mount into.
+     * @returns The outlet.
+     */
+    // mountElement(element: Element, outlet: Element): Element;
 
     /**
      * Tears down and cleans whatever is mounted in an outlet.

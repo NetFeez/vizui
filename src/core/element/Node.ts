@@ -5,6 +5,7 @@
  */
 
 import { NODE, APPENDABLE } from '../symbols.js';
+
 import EventTracker from './EventTracker.js';
 import Store from '../state/Store.js';
 

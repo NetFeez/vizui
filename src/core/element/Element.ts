@@ -4,7 +4,7 @@
  * @license Apache-2.0
  */
 
-import { APPENDABLE } from '../symbols.js';
+import { APPENDABLE, ELEMENT } from '../symbols.js';
 
 import Events from '../../events/Events.js';
 import DomObserver from './DomObserver.js';
@@ -20,6 +20,8 @@ export class Element<T extends Element.ExtendedHtmlElement = HTMLElement> extend
 
     public static body = document.body;
     public static head = document.head;
+
+    public readonly [ELEMENT] = true;
 
     /** The mutation/intersection observer bound to this element. **/
     public readonly observer: DomObserver<T>;

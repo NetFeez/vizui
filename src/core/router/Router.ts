@@ -33,6 +33,7 @@ import _LayoutRule from './rule/LayoutRule.js';
 import _SocketRule from './rule/SocketRule.js';
 import _ActionRule from './rule/ActionRule.js';
 import _RouterRule from './rule/RouterRule.js';
+import { VIEW } from '../symbols.js';
 
 export class Router extends Events<Router.EventMap> {
 
@@ -456,8 +457,10 @@ export class Router extends Events<Router.EventMap> {
         if (this.vNotFound) {
             const content = this.vNotFound;
             const component = typeof content === 'function' ? await content() : content;
-            if (component instanceof View && component.load) await component.load(entry);
-            if (component instanceof View && component.render) await component.render();
+            if (VIEW in component) {
+                if (component.load) await component.load(entry);
+                if (component.render) await component.render();
+            }
             this.rendererFor(state).mount(component, target);
         }
         this.vCurrent = entry;
@@ -518,12 +521,7 @@ export class Router extends Events<Router.EventMap> {
      * @param tracker - The navigation tracker, when present.
      * @throws When no error guard handled the error.
      */
-    protected async handleError(
-        error: unknown,
-        entry: Router.Entry,
-        state: _Guard.State,
-        tracker?: _Tracker,
-    ): Promise<void> {
+    protected async handleError(error: unknown, entry: Router.Entry, state: _Guard.State, tracker?: _Tracker,): Promise<void> {
         tracker?.fail(error);
         tracker?.markErrorOffered();
         const control = await this.vPipeline.runError(error, entry, state);
@@ -543,21 +541,11 @@ export class Router extends Events<Router.EventMap> {
      * @param state - The shared guard state.
      * @param tracker - The navigation tracker, when present.
      */
-    protected async settleError(
-        error: unknown,
-        entry: Router.Entry,
-        state: _Guard.State,
-        tracker?: _Tracker,
-    ): Promise<void> {
+    protected async settleError(error: unknown, entry: Router.Entry, state: _Guard.State, tracker?: _Tracker,): Promise<void> {
         tracker?.fail(error);
         if (!tracker?.errorOffered) {
-            try {
-                await this.handleError(error, entry, state, tracker);
-                return;
-            }
-            catch (unhandled) {
-                return void this.emit('error', unhandled);
-            }
+            try { return void await this.handleError(error, entry, state, tracker); }
+            catch (unhandled) { return void this.emit('error', unhandled); }
         }
         this.emit('error', error);
     }
@@ -732,7 +720,7 @@ export namespace Router {
     export type State = Record<string, unknown>;
 
     /** The fallback content kinds mounted when no route matches. **/
-    export type NotFoundContent = Component | (() => Component | Promise<Component>);
+    export type NotFoundContent = View | Component | Element | (() => View | Component | Element | Promise<View |   Component | Element>);
 
     /** A fully parsed navigation entry. **/
     export interface Entry {
