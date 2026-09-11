@@ -29,7 +29,7 @@ export class Store<State> implements Store.IsReadOnly<State> {
     }
 
     /** The current state. **/
-    public get state(): State { return this.vState; }
+    public get state(): Readonly<State> { return this.vState; }
 
     /**
      * Sets a new state, notifying subscribers.
