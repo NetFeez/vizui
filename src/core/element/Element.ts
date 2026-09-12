@@ -243,6 +243,16 @@ export class Element<T extends Element.ExtendedHtmlElement = HTMLElement> extend
     }
 
     /**
+     * Gets a child element by its CSS selector.
+     * @param selector - The CSS selector to use.
+     * @returns The matching element, or null if none is found.
+     */
+    public get<T extends Element.Query.Extended>(selector: T): Element<Element.Query.Result<T>> | null {
+        const element = this.root.querySelector<Element.Query.Result<T>>(selector);
+        return element ? new Element(element) : null;
+    }
+
+    /**
      * Adds an event listener to this element and tracks it for teardown.
      * @param name - The name of the event.
      * @param listener - The callback to execute.
@@ -351,8 +361,8 @@ export class Element<T extends Element.ExtendedHtmlElement = HTMLElement> extend
      * const input = Element.get<HTMLInputElement>('input[name="my-input"]');
      * ```
      */
-    public static get<T extends Element.ExtendedHtmlElement = HTMLElement>(selector: string): Element<T> | null {
-        const selection = document.querySelector<T>(selector);
+    public static get<T extends Element.Query.Extended>(selector: T): Element<Element.Query.Result<T>> | null {
+        const selection = document.querySelector<Element.Query.Result<T>>(selector);
         return selection ? new Element(selection) : null;
     }
 
@@ -442,6 +452,12 @@ export namespace Element {
 
     /** Maps a tag name to its concrete HTMLElement type. **/
     export type Type = HTMLElementTagNameMap;
+
+    export namespace Query {
+        export type Selector = keyof Type
+        export type Extended =Selector | (string & {});
+        export type Result<T extends Extended> = T extends Selector ? Type[T] : HTMLElement;
+    }
 
     export interface IsAppendable extends Node.IsAppendable {
         readonly [APPENDABLE]: true;
