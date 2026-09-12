@@ -16,6 +16,12 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
     private static [SUBSCRIPTION_MAP]: Node.Storage.Reactivity = new WeakMap();
     private static [TRACKER_MAP]: Node.Storage.Tracking = new WeakMap();
 
+    /**
+     * When true, every reactive child group is wrapped in opening/closing `Comment`
+     * markers so the group boundaries are visible while debugging. Defaults to false.
+     **/
+    public static debugGroups = false;
+
     public readonly [APPENDABLE] = true;
     public readonly [NODE] = true;
 
@@ -74,10 +80,10 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
      * ```
      */
     public append(...childList: Node.NodeValueType[]): this {
-        const rawList = childList.map((node) => {
-            if (Node.isAppendable(node)) return Node.getNativeNode(node);
-            if (node instanceof Store) return this.createReactive(node);
-            return new Text(String(node));
+        const rawList = childList.flatMap((node) => {
+            if (Node.isAppendable(node)) return [Node.getNativeNode(node)];
+            if (node instanceof Store) return this.createReactive(node, this.root);
+            return [new Text(String(node))];
         });
         for (const child of rawList) this.root.appendChild(child);
         return this;
@@ -110,9 +116,17 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
     public replaceWith(newNode: Node.NodeValueType): this {
         if (!this.root.parentNode) throw new Error('the node has no parent');
 
+        if (newNode instanceof Store) {
+            const parent = this.root.parentNode;
+            const group = this.createReactive(newNode, parent);
+            const reference = this.root.nextSibling;
+            parent.removeChild(this.root);
+            for (const node of group) parent.insertBefore(node, reference);
+            return this;
+        }
+
         let raw: globalThis.Node;
         if (Node.isAppendable(newNode)) raw = Node.getNativeNode(newNode);
-        else if (newNode instanceof Store) raw = this.createReactive(newNode);
         else raw = new Text(String(newNode));
 
         this.root.parentNode.replaceChild(raw, this.root);
@@ -254,36 +268,43 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
     }
 
     /**
-     * Creates a reactive DOM node that updates when the store's state changes.
-     * @param store - The store to bind to the node.
-     * @returns A DOM node that reacts to the store's state changes.
+     * Creates the reactive child group of a store, bound to a parent.
+     * @param store - The store to bind to the group.
+     * @param parent - The parent the group will be appended to.
+     * @returns The DOM nodes representing the current state of the store.
      *
      * @remarks
-     * This method creates a DOM node that automatically updates its content whenever the state of the provided store changes. It subscribes to the store and replaces the node's content with a new node generated from the updated state.
+     * The group is a set of contiguous siblings that is fully re-rendered whenever
+     * the store changes (no keyed diffing: update the whole state with `set()`).
+     * Position is kept via the live reference to the next sibling, so an empty
+     * array inside the group keeps its slot on refill; a store that starts empty
+     * with no following sibling degrades to appending at the end of the parent.
+     * When {@link debugGroups} is enabled, the group is wrapped in opening/closing
+     * `Comment` markers so boundaries are visible while debugging.
      */
-    private createReactive(store: Store<unknown>): globalThis.Node {
-        let node = Node.fromStore(store);
-        const handler = (value: unknown): void => {
-            let replace: globalThis.Node | null = null;
-            if (!Node.isAppendable(value)) {
-                if (node instanceof Text) node.textContent = String(value);
-                else {
-                    const newNode = new Text(String(value));
-                    if (node.parentNode) node.parentNode.replaceChild(newNode, node);
-                    replace = newNode;
-                }
-            } else {
-                const newNode = Node.getNativeNode(value);
-                if (node.parentNode) node.parentNode.replaceChild(newNode, node);
-                replace = newNode;
-            }
-            if (replace) node = replace;
+    private createReactive(store: Store<unknown>, parent: globalThis.Node): globalThis.Node[] {
+        const build = (value: unknown): globalThis.Node[] => {
+            const nodes = Node.toNodes(value);
+            return Node.debugGroups
+                ? [new Comment('[vizui:group]'), ...nodes, new Comment('[/vizui:group]')]
+                : nodes;
+        };
+
+        let group = build(store.state);
+        let anchor: globalThis.Node | null = null;
+
+        const render = (value: unknown): void => {
+            if (group.length > 0) anchor = group[group.length - 1].nextSibling;
+            for (const node of group) node.parentNode?.removeChild(node);
+            group = build(value);
+            for (const node of group) parent.insertBefore(node, anchor);
         }
-        const unsubscribe = store.subscribe(handler);
+
+        const unsubscribe = store.subscribe(render);
         let subscriptions = this.reactiveSubscriptions.get(store)
         if (!subscriptions) this.reactiveSubscriptions.set(store, subscriptions = new Set());
         subscriptions.add({ type: 'child', unsubscribe });
-        return node;
+        return group;
     }
 
     /**
@@ -327,17 +348,17 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
     }
     
     /**
-     * Creates a DOM node from the current state of a store.
-     * @param store - The store to create a node from.
-     * @returns A DOM node representing the current state of the store.
-     *
-     * @remarks
-     * This method generates a DOM node based on the current state of the provided store. If the state is a DOM node or an appendable object, it returns the corresponding raw DOM node. Otherwise, it creates a new Text node containing the string representation of the state.
+     * Resolves a store state (array or single value) to a flat list of DOM nodes.
+     * @param value - The state value to resolve.
+     * @returns Raw DOM nodes for render: appendables are unwrapped, primitives become text.
      */
-    private static fromStore(store: Store<unknown>): globalThis.Node {
-        return Node.isAppendable(store.state)
-            ? Node.getNativeNode(store.state)
-            : new Text(String(store.state));
+    private static toNodes(value: unknown): globalThis.Node[] {
+        const list = Array.isArray(value) ? value : [value];
+        return list.flatMap((item) => {
+            if (Array.isArray(item)) return Node.toNodes(item);
+            if (Node.isAppendable(item)) return [Node.getNativeNode(item)];
+            return [new Text(String(item))];
+        });
     }
 }
 
