@@ -253,6 +253,16 @@ export class Element<T extends Element.ExtendedHtmlElement = HTMLElement> extend
     }
 
     /**
+     * Gets all child elements matching a CSS selector.
+     * @param selector - The CSS selector to use.
+     * @returns An array of matching elements, or an empty array if none are found.
+     */
+    public getAll<T extends Element.Query.Extended>(selector: T): Element<Element.Query.Result<T>>[] {
+        const elements = this.root.querySelectorAll<Element.Query.Result<T>>(selector);
+        return Array.from(elements).map((element) => new Element(element));
+    }
+
+    /**
      * Adds an event listener to this element and tracks it for teardown.
      * @param name - The name of the event.
      * @param listener - The callback to execute.
@@ -364,6 +374,22 @@ export class Element<T extends Element.ExtendedHtmlElement = HTMLElement> extend
     public static get<T extends Element.Query.Extended>(selector: T): Element<Element.Query.Result<T>> | null {
         const selection = document.querySelector<Element.Query.Result<T>>(selector);
         return selection ? new Element(selection) : null;
+    }
+
+    /**
+     * Gets all elements from the DOM by selector.
+     * @param selector - The selector to use.
+     * @returns An array of elements, or an empty array if none are found.
+     *
+     * @example
+     * ```ts
+     * const divs = Element.getAll<HTMLDivElement>('div.my-class');
+     * const inputs = Element.getAll<HTMLInputElement>('input[type="text"]');
+     * ```
+     */
+    public static getAll<T extends Element.Query.Extended>(selector: T): Element<Element.Query.Result<T>>[] {
+        const selection = document.querySelectorAll<Element.Query.Result<T>>(selector);
+        return Array.from(selection).map((element) => new Element(element));
     }
 
     /**
