@@ -30,7 +30,6 @@ import { DomRenderer } from './Renderer.js';
 import _Rule from './rule/Rule.js';
 import _ShowRule from './rule/ShowRule.js';
 import _LayoutRule from './rule/LayoutRule.js';
-import _SocketRule from './rule/SocketRule.js';
 import _ActionRule from './rule/ActionRule.js';
 import _RouterRule from './rule/RouterRule.js';
 import { VIEW } from '../symbols.js';
@@ -208,19 +207,6 @@ export class Router extends Events<Router.EventMap> {
     public layout(template: string, content: _LayoutRule.Content): _LayoutRule {
         const route = new _LayoutRule(this.prefix(template), content);
         this.vLayoutManager.register(route);
-        return route;
-    }
-
-    /**
-     * Registers a route that connects a client socket.
-     * @param template - The url template of the route.
-     * @param content - The handler receiving the connected socket.
-     * @param pipeline - The per-route pipeline.
-     * @returns The registered route.
-     */
-    public socket(template: string, content: _SocketRule.Content, pipeline: _Pipeline = new _Pipeline()): _SocketRule {
-        const route = new _SocketRule(this.prefix(template), content, pipeline);
-        this.addRule(route);
         return route;
     }
 
@@ -645,7 +631,6 @@ export namespace Router {
     export import Guard = _Guard;
     export import Pipeline = _Pipeline;
     export import Route = _Rule;
-    export import SocketRoute = _SocketRule;
     export import Tracker = _Tracker;
 
     export interface Options {
@@ -705,7 +690,7 @@ export namespace Router {
     export type AlgorithmName = 'fifo' | 'tree' | 'FIFO' | 'Tree';
 
     /** The route kinds a router can mount in bulk. **/
-    export type Mountable = _ShowRule | _SocketRule | _ActionRule | _RouterRule;
+    export type Mountable = _ShowRule | _ActionRule | _RouterRule;
 
     /** The source kinds an outlet can be resolved from. **/
     export type OutletSource = Element | Component | HTMLElement;

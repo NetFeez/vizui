@@ -4,19 +4,18 @@
  * @license Apache-2.0
  */
 
-export { default as Router } from './Router.js';
-export { default as Rule } from './rule/Rule.js';
-export { default as ShowRule } from './rule/ShowRule.js';
-export { default as LayoutRule } from './rule/LayoutRule.js';
-export { default as SocketRule } from './rule/SocketRule.js';
-export { default as ActionRule } from './rule/ActionRule.js';
-export { default as RouterRule } from './rule/RouterRule.js';
-export { default as Algorithm } from './algorithm/Algorithm.js';
-export { default as FIFO } from './algorithm/FIFO.js';
-export { default as Tree } from './algorithm/Tree.js';
-export { default as Guard } from './pipeline/Guard.js';
-export { default as Pipeline } from './pipeline/Pipeline.js';
-export { default as History } from './navigator/History.js';
-export { default as Tracker } from './Tracker.js';
+export { Router } from './Router.js';
+export { Rule } from './rule/Rule.js';
+export { ShowRule } from './rule/ShowRule.js';
+export { LayoutRule } from './rule/LayoutRule.js';
+export { ActionRule } from './rule/ActionRule.js';
+export { RouterRule } from './rule/RouterRule.js';
+export { Algorithm } from './algorithm/Algorithm.js';
+export { FIFO } from './algorithm/FIFO.js';
+export { Tree } from './algorithm/Tree.js';
+export { Guard } from './pipeline/Guard.js';
+export { Pipeline } from './pipeline/Pipeline.js';
+export { History } from './navigator/History.js';
+export { Tracker } from './Tracker.js';
 export { DomRenderer } from './Renderer.js';
 export type { Renderer } from './Renderer.js';
