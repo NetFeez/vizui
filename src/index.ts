@@ -38,3 +38,4 @@ export { NetworkError } from './network/http-client/NetworkError.js';
 export { Socket } from './network/Socket.js';
 
 export { Utilities } from './Utilities.js';
+export * from './jsx-runtime.js';
