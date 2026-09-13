@@ -29,7 +29,7 @@ export { View } from './core/component/View.js';
 
 export { Context } from './state/Context.js';
 export { Store } from './state/Store.js';
-export { CSS as Css } from './utilities/CSS.js';
+export { CSS } from './utilities/CSS.js';
 
 export { symbols } from './core/symbols.js';
 export { Router, Guard, History } from './core/router/index.js';

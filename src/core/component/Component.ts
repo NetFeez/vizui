@@ -104,7 +104,7 @@ export abstract class Component<
      * @param parent - The parent to append to.
      * @returns This component, for chaining.
      */
-    public appendTo(parent: Element.ChildType): this {
+    public appendTo(parent: Element.ElementType): this {
         if (this.willMount) this.willMount();
         this.root.appendTo(parent);
         if (this.onMount) this.onMount();
@@ -158,7 +158,7 @@ export namespace Component {
         ? Element.Type[E] : never;
 
     /** The child kinds a component accepts: other components, elements or HTMLElements. **/
-    export type ChildType = Component | Element.ChildType;
+    export type ChildType = Component | Element.ElementType;
 
     /** The optional lifecycle hooks a component can implement. **/
     export interface Lifecycle {

@@ -17,8 +17,8 @@ const OBSERVER_MAP = Symbol('vizui.element/observer');
 export class Element<T extends Element.ExtendedHtmlElement = HTMLElement> extends Node<T> {
     public static [OBSERVER_MAP]: Element.Storage.Observer = new WeakMap();
 
-    public static body = document.body;
-    public static head = document.head;
+    public static body = new Element(document.body);
+    public static head = new Element(document.head);
 
     public readonly [ELEMENT] = true;
 
@@ -287,6 +287,19 @@ export class Element<T extends Element.ExtendedHtmlElement = HTMLElement> extend
     }
 
     /**
+     * Removes a previously added one-time event listener.
+     * @param name - The name of the event.
+     * @param listener - The listener to remove.
+     * @param options - The listener options.
+     * @returns This element, for chaining.
+     */
+    public override offOnce<E extends keyof Element.EventMap<T>>(name: E, listener: Element.EventMap<T>[E], options?: Node.Tracker.Options): this;
+    public override offOnce(name: string, listener: Node.Listener<T>, options?: Node.Tracker.Options): this;
+    public override offOnce(name: string, listener: Node.Listener<T>, options?: Node.Tracker.Options): this {
+        return super.offOnce(name, listener, options);
+    }
+
+    /**
      * Checks whether a given object is an Element wrapper.
      * @param object - The object to check.
      * @returns True if the object is an Element wrapper, false otherwise.
@@ -469,7 +482,10 @@ export namespace Element {
     }
 
     /** The children accepted by an Element. **/
-    export type ChildType = Element<any> | Node.NodeType;
+    export type ElementType = Element<any> | Node.NodeType;
+
+    /** The values that can be assigned to an Element. **/
+    export type ElementValueType = Element<any> | Node.NodeValueType;
 
     /** The options applied to an element at creation time. **/
     export interface CreationOptions<T extends HTMLElement> {
@@ -503,7 +519,7 @@ export namespace Element {
          * The children to append to the element.
          * @default undefined
          */
-        childList?: Array<Element.ChildType>;
+        childList?: Array<Element.ElementType>;
     }
 
     /** The deprecated structural declaration of an element. **/
