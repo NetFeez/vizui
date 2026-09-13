@@ -4,9 +4,9 @@
  * @license Apache-2.0
  */
 
-import Element from '../element/Element.js';
+import Element from '../core/element/Element.js';
 
-export class Css {
+export class CSS {
     /** The cache of in-flight or completed stylesheet loads, by absolute url. **/
     private static readonly vCache = new Map<string, Promise<boolean>>();
 
@@ -27,7 +27,7 @@ export class Css {
         const promise = new Promise<boolean>(resolve => {
             link.once('load', () => resolve(true));
             link.once('error', () => {
-                Css.vCache.delete(url);
+                CSS.vCache.delete(url);
                 resolve(false);
             });
             link.appendTo(Element.head);
@@ -49,4 +49,4 @@ export class Css {
         return null;
     }
 }
-export default Css;
+export default CSS;

@@ -9,7 +9,7 @@ import { APPENDABLE, COMPONENT } from '../symbols.js';
 import Element from '../element/Element.js';
 import Node from '../element/Node.js';
 import Events from '../../events/Events.js';
-import Css from '../resource/Css.js';
+import CSS from '../../utilities/CSS.js';
 
 /**
  * Base class to create typed components with lifecycle and teardown.
@@ -65,7 +65,7 @@ export abstract class Component<
     EventMap extends Events.EventMap = Events.EventMap,
 > extends Events<EventMap> implements Node.IsAppendable, Component.Lifecycle {
     /** The shared stylesheet loader available to subclasses. **/
-    protected static readonly css = Css;
+    protected static readonly css = CSS;
 
     public readonly [COMPONENT] = true;
     public readonly [APPENDABLE] = true;

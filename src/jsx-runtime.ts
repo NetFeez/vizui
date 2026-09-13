@@ -2,7 +2,7 @@ import { COMPONENT } from './core/symbols.js';
 
 import Element from './core/element/Element.js';
 import { Node } from './core/element/Node.js';
-import Store from './core/state/Store.js';
+import Store from './state/Store.js';
 
 import Component from './core/component/Component.js';
 import View from './core/component/View.js';

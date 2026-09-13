@@ -4,7 +4,7 @@
  * @license Apache-2.0
  */
 
-import { EventsEmitter } from '../../events/Events.js';
+import { EventsEmitter } from '../events/Events.js';
 
 export class Store<State> implements Store.IsReadOnly<State> {
     /** The current state of the store. **/

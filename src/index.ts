@@ -27,14 +27,14 @@ export { Component } from './core/component/Component.js';
 export { Layout } from './core/component/Layout.js';
 export { View } from './core/component/View.js';
 
-export { Context } from './core/state/Context.js';
-export { Store } from './core/state/Store.js';
-export { Css } from './core/resource/Css.js';
+export { Context } from './state/Context.js';
+export { Store } from './state/Store.js';
+export { CSS as Css } from './utilities/CSS.js';
 
 export { symbols } from './core/symbols.js';
 export { Router, Guard, History } from './core/router/index.js';
-export { HttpClient, Request, Response, Body } from './core/network/http-client/HttpClient.js';
-export { NetworkError } from './core/network/http-client/NetworkError.js';
-export { Socket } from './core/network/Socket.js';
+export { HttpClient, Request, Response, Body } from './network/http-client/HttpClient.js';
+export { NetworkError } from './network/http-client/NetworkError.js';
+export { Socket } from './network/Socket.js';
 
 export { Utilities } from './Utilities.js';

@@ -9,7 +9,7 @@ import { APPENDABLE, ELEMENT } from '../symbols.js';
 import Events from '../../events/Events.js';
 import DomObserver from './DomObserver.js';
 import Node from './Node.js';
-import Store from '../state/Store.js';
+import Store from '../../state/Store.js';
 
 const OBSERVER_MAP = Symbol('vizui.element/observer');
 // const REACTIVE_MAP = Symbol('vizui.element/reactive');

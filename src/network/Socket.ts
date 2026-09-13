@@ -4,7 +4,7 @@
  * @license Apache-2.0
  */
 
-import Events from '../../events/Events.js';
+import Events from '../events/Events.js';
 
 export class Socket extends Events<Socket.EventMap> {
     /** The underlying websocket, when connected. **/

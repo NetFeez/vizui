@@ -7,7 +7,7 @@
 import { NODE, APPENDABLE } from '../symbols.js';
 
 import EventTracker from './EventTracker.js';
-import Store from '../state/Store.js';
+import Store from '../../state/Store.js';
 
 const SUBSCRIPTION_MAP = Symbol('vizui.node/subscriptions');
 const TRACKER_MAP = Symbol('vizui.node/tracker');

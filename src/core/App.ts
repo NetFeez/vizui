@@ -11,7 +11,7 @@ import Element from './element/Element.js';
 import Component from './component/Component.js';
 import Config from './Config.js';
 import Router from './router/Router.js';
-import Store from './state/Store.js';
+import Store from '../state/Store.js';
 
 import { COMPONENT } from './symbols.js';
 
