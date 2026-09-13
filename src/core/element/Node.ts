@@ -6,33 +6,21 @@
 
 import { NODE, APPENDABLE } from '../symbols.js';
 
+import LiveStorage from '../LiveStorage.js';
 import EventTracker from './EventTracker.js';
+import Reactive from '../reactive/Reactive.js';
+import NodeGroup from '../reactive/NodeGroup.js';
 import Store from '../../state/Store.js';
 
-const SUBSCRIPTION_MAP = Symbol('vizui.node/subscriptions');
-const TRACKER_MAP = Symbol('vizui.node/tracker');
-
 export class Node<T extends globalThis.Node = globalThis.Node> implements Node.IsAppendable {
-    private static [SUBSCRIPTION_MAP]: Node.Storage.Reactivity = new WeakMap();
-    private static [TRACKER_MAP]: Node.Storage.Tracking = new WeakMap();
-
-    /**
-     * When true, every reactive child group is wrapped in opening/closing `Comment`
-     * markers so the group boundaries are visible while debugging. Defaults to false.
-     **/
-    public static debugGroups = false;
-
     public readonly [APPENDABLE] = true;
     public readonly [NODE] = true;
 
     /** The wrapped DOM node. **/
     public readonly root: T;
 
-    /** The event tracker for this node. **/
-    protected eventTracker: Node.Storage.Tracking.Entry;
-
-    /** The reactive map for this node. **/
-    protected reactiveSubscriptions: Node.Storage.Reactivity.Entry;
+    /** The live bindings of this node: event tracker and reactive pool. **/
+    protected readonly live: LiveStorage;
 
     /**
      * Wraps an existing DOM node.
@@ -41,14 +29,7 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
     public constructor(node: T) {
         if (!Node.isNative(node)) throw new Error('the node is not a Node');
         this.root = node;
-
-        let tracker = Node[TRACKER_MAP].get(this.root);
-        if (!tracker) Node[TRACKER_MAP].set(this.root, tracker = new EventTracker());
-        this.eventTracker = tracker;
-
-        let reactive = Node[SUBSCRIPTION_MAP].get(this.root);
-        if (!reactive) Node[SUBSCRIPTION_MAP].set(this.root, reactive = new WeakMap());
-        this.reactiveSubscriptions = reactive;
+        this.live = LiveStorage.of(this.root);
     }
 
     /** Whether the node is attached to the document. **/
@@ -80,12 +61,16 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
      * ```
      */
     public append(...childList: Node.NodeValueType[]): this {
-        const rawList = childList.flatMap((node) => {
-            if (Node.isAppendable(node)) return [Node.getNativeNode(node)];
-            if (node instanceof Store) return this.createReactive(node, this.root);
-            return [new Text(String(node))];
-        });
-        for (const child of rawList) this.root.appendChild(child);
+        for (const child of childList) {
+            if (Node.isAppendable(child)) { this.root.appendChild(Node.getNativeNode(child)); continue; }
+            if (child instanceof Store) {
+                const group = new NodeGroup(child);
+                group.appendTo(this.root);
+                this.trackReactive(group);
+                continue;
+            }
+            this.root.appendChild(new Text(String(child)));
+        }
         return this;
     }
 
@@ -117,11 +102,12 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
         if (!this.root.parentNode) throw new Error('the node has no parent');
 
         if (newNode instanceof Store) {
+            const group = new NodeGroup(newNode);
             const parent = this.root.parentNode;
-            const group = this.createReactive(newNode, parent);
             const reference = this.root.nextSibling;
             parent.removeChild(this.root);
-            for (const node of group) parent.insertBefore(node, reference);
+            group.appendTo(parent, reference);
+            this.trackReactive(group);
             return this;
         }
 
@@ -173,7 +159,7 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
      */
     public on(name: string, listener: Node.Listener<T>, options?: EventTracker.Options): this {
         const wrapped = this.wrapListener(listener);
-        this.eventTracker.add({ name: name, listener, wrapped, options });
+        this.live.tracker.add({ name: name, listener, wrapped, options });
         this.root.addEventListener(name, wrapped, options);
         return this;
     }
@@ -191,7 +177,7 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
             : { ...options, once: true };
 
         const wrapped = this.wrapListener(listener);
-        this.eventTracker.add({ name: name, listener, wrapped, options: listenerOptions });
+        this.live.tracker.add({ name: name, listener, wrapped, options: listenerOptions });
         this.root.addEventListener(name, wrapped, listenerOptions);
         return this;
     }
@@ -204,10 +190,10 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
      * @returns This node, for chaining.
      */
     public off(name: string, listener: Node.Listener<T>, options?: EventTracker.Options): this {
-        const entry = this.eventTracker.find({ name, listener, options });
+        const entry = this.live.tracker.find({ name, listener, options });
         if (!entry) return this;
         this.root.removeEventListener(name, entry.wrapped || entry.listener, options);
-        this.eventTracker.delete(entry);
+        this.live.tracker.delete(entry);
         return this;
     }
 
@@ -234,24 +220,29 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
      * This removes every listener added through {@link on} or {@link once}.
      */
     public unbindAll(): this {
-        for (const entry of this.eventTracker.entries) this.root.removeEventListener(entry.name, entry.wrapped || entry.listener, entry.options);
-        this.eventTracker.delete();
+        for (const entry of this.live.tracker.entries) this.root.removeEventListener(entry.name, entry.wrapped || entry.listener, entry.options);
+        this.live.tracker.delete();
         return this;
     }
 
     /**
-     * Creates a reactive node based on the provided store.
-     * @param store - The store to bind to the node.
+     * Unbinds the reactive bindings of a store, removing matching subscriptions.
+     * @param store - The store to unbind.
+     * @param filter - Optional type or predicate to select which bindings to detach.
      * @returns This node, for chaining.
      */
-    public offReactive(store: Store<any>, filter?: Node.Subscription.Type | Node.Subscription.Filter): this {
-        const subscriptions = this.reactiveSubscriptions.get(store);
-        if (subscriptions) subscriptions.forEach((unsubscribe) => {
-            if (typeof filter === 'string' && unsubscribe.type !== filter) return;
-            if (typeof filter === 'function' && !filter(unsubscribe)) return;
-            unsubscribe.unsubscribe();
-        });
-        this.reactiveSubscriptions.delete(store);
+    public offReactive(store: Store<any>, filter?: Reactive.Type | Reactive.Filter): this {
+        this.live.unregister(store, filter);
+        return this;
+    }
+
+    /**
+     * Destroys the live bindings of this node: detaches its event listeners
+     * and unsubscribes its reactives.
+     * @returns This node, for chaining.
+     */
+    public destroy(): this {
+        this.live.destroy();
         return this;
     }
 
@@ -268,43 +259,13 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
     }
 
     /**
-     * Creates the reactive child group of a store, bound to a parent.
-     * @param store - The store to bind to the group.
-     * @param parent - The parent the group will be appended to.
-     * @returns The DOM nodes representing the current state of the store.
-     *
-     * @remarks
-     * The group is a set of contiguous siblings that is fully re-rendered whenever
-     * the store changes (no keyed diffing: update the whole state with `set()`).
-     * Position is kept via the live reference to the next sibling, so an empty
-     * array inside the group keeps its slot on refill; a store that starts empty
-     * with no following sibling degrades to appending at the end of the parent.
-     * When {@link debugGroups} is enabled, the group is wrapped in opening/closing
-     * `Comment` markers so boundaries are visible while debugging.
+     * Registers a reactive group under its store for teardown.
+     * @param group - The reactive group to track.
+     * @returns This node, for chaining.
      */
-    private createReactive(store: Store<unknown>, parent: globalThis.Node): globalThis.Node[] {
-        const build = (value: unknown): globalThis.Node[] => {
-            const nodes = Node.toNodes(value);
-            return Node.debugGroups
-                ? [new Comment('[vizui:group]'), ...nodes, new Comment('[/vizui:group]')]
-                : nodes;
-        };
-
-        let group = build(store.state);
-        let anchor: globalThis.Node | null = null;
-
-        const render = (value: unknown): void => {
-            if (group.length > 0) anchor = group[group.length - 1].nextSibling;
-            for (const node of group) node.parentNode?.removeChild(node);
-            group = build(value);
-            for (const node of group) parent.insertBefore(node, anchor);
-        }
-
-        const unsubscribe = store.subscribe(render);
-        let subscriptions = this.reactiveSubscriptions.get(store)
-        if (!subscriptions) this.reactiveSubscriptions.set(store, subscriptions = new Set());
-        subscriptions.add({ type: 'child', unsubscribe });
-        return group;
+    private trackReactive(group: NodeGroup): this {
+        this.live.register(group);
+        return this;
     }
 
     /**
@@ -346,43 +307,10 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
         if (Node.isAppendable(node)) return Node.getNativeNode(node.root);
         throw new Error('The node is not a valid DOM node.');
     }
-    
-    /**
-     * Resolves a store state (array or single value) to a flat list of DOM nodes.
-     * @param value - The state value to resolve.
-     * @returns Raw DOM nodes for render: appendables are unwrapped, primitives become text.
-     */
-    private static toNodes(value: unknown): globalThis.Node[] {
-        const list = Array.isArray(value) ? value : [value];
-        return list.flatMap((item) => {
-            if (Array.isArray(item)) return Node.toNodes(item);
-            if (Node.isAppendable(item)) return [Node.getNativeNode(item)];
-            return [new Text(String(item))];
-        });
-    }
 }
 
 export namespace Node {
     export import Tracker = EventTracker;
-    export namespace Subscription {
-        export type Type = 'child' | 'attribute' | (string & {});
-        export type Filter = (subscription: Subscription) => boolean;
-    }
-    export interface Subscription {
-        type: Subscription.Type;
-        unsubscribe: Store.Unsubscribe;
-    };
-    export namespace Storage {
-        export namespace Reactivity {
-            export type Subscriptions = Set<Subscription>;
-            export type Entry = WeakMap<Store<any>, Subscriptions>;
-        };
-        export namespace Tracking {
-            export type Entry = EventTracker;
-        }
-        export type Reactivity = WeakMap<globalThis.Node, Storage.Reactivity.Entry>;
-        export type Tracking = WeakMap<globalThis.Node, Tracking.Entry>;
-    }
     export namespace Listener {
         export interface Listener<T extends globalThis.Node = globalThis.Node> {
             (this: Node<T>, event: Event): void;

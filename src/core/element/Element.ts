@@ -9,14 +9,13 @@ import { APPENDABLE, ELEMENT } from '../symbols.js';
 import Events from '../../events/Events.js';
 import DomObserver from './DomObserver.js';
 import Node from './Node.js';
+import Attribute from '../reactive/Attribute.js';
 import Store from '../../state/Store.js';
 
 const OBSERVER_MAP = Symbol('vizui.element/observer');
-// const REACTIVE_MAP = Symbol('vizui.element/reactive');
 
 export class Element<T extends Element.ExtendedHtmlElement = HTMLElement> extends Node<T> {
     public static [OBSERVER_MAP]: Element.Storage.Observer = new WeakMap();
-    // public static [REACTIVE_MAP]: Element.Storage.AttributeSubscriptions = new WeakMap();
 
     public static body = document.body;
     public static head = document.head;
@@ -38,10 +37,6 @@ export class Element<T extends Element.ExtendedHtmlElement = HTMLElement> extend
         let observer = Element[OBSERVER_MAP].get(this.root);
         if (!observer) Element[OBSERVER_MAP].set(this.root, observer = new DomObserver(this.root));
         this.observer = observer;
-
-        // let reactive = Element[REACTIVE_MAP].get(this.root);
-        // if (!reactive) Element[REACTIVE_MAP].set(this.root, reactive = new Map());
-        // this.reactiveAttributeSubscriptions = reactive;
     }
 
     /** The scroll height of the element in pixels. **/
@@ -175,31 +170,21 @@ export class Element<T extends Element.ExtendedHtmlElement = HTMLElement> extend
      * Binds a reactive attribute to the element.
      * @param name - The name of the attribute.
      * @param store - The store to bind to the attribute.
-     * @param readonly - Whether the attribute is readonly.
      * @returns This element, for chaining.
      */
     public bindAttribute(name: string, store: Store<string | null>): this {
-        let subscriptions = this.reactiveSubscriptions.get(store);
-        if (!subscriptions) this.reactiveSubscriptions.set(store, subscriptions = new Set());
-        const apply = (value: string | null): void => {
-            if (value === null || value === undefined) this.root.removeAttribute(name);
-            else this.root.setAttribute(name, value);
-        };
-        const unsubscribe = store.subscribe(apply);
-        subscriptions.add({ type: 'attribute', unsubscribe });
-        apply(store.state);
+        this.live.register(new Attribute(store, this.root, name));
         return this;
     }
 
     /**
      * Unbinds a reactive attribute from the element.
-     * @param name - The name of the attribute.
+     * @param store - The store to unbind from the attribute.
      * @returns This element, for chaining.
      */
     public unbindAttribute(store: Store<string | null>): this {
-        const subscriptions = this.reactiveSubscriptions.get(store);
-        if (!subscriptions) return this;
-        return this.offReactive(store, 'attribute');
+        this.live.unregister(store, 'attribute');
+        return this;
     }
 
     /**
@@ -451,14 +436,7 @@ export class Element<T extends Element.ExtendedHtmlElement = HTMLElement> extend
 
 export namespace Element {
     export namespace Storage {
-        export namespace AttributeSubscriptions {
-            export type Entry<T extends HTMLElement> = Map<string, Set<{
-                unsubscribe: () => void;
-                listener?: (_: T, name: string, value: string | null, last: string | null) => void;
-            }>>;
-        }
         export type Observer = WeakMap<HTMLElement, DomObserver<any>>;
-        export type AttributeSubscriptions = WeakMap<HTMLElement, AttributeSubscriptions.Entry<any>>;
     }
     export interface ExtendedHtmlElement extends HTMLElement {
         // Future metadata saving based on symbols
