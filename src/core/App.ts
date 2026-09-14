@@ -67,9 +67,10 @@ export class App<State = unknown> extends Events<App.EventMap> {
      * @param content - The components, elements or HTMLElements to append.
      * @returns This app, for chaining.
      */
-    public render(...content: Component.ChildType[]): this {
+    public render(...content: Component.ValueType[]): this {
         for (const child of content) {
-            if (COMPONENT in child) child.appendTo(this.root);
+            if (typeof child !== 'object') this.root.append(child);
+            else if (COMPONENT in child) this.root.append(child.root);
             else this.root.append(child);
         }
         return this;

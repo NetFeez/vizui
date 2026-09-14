@@ -60,7 +60,7 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
      * parent.append(child);
      * ```
      */
-    public append(...childList: Node.NodeValueType[]): this {
+    public append(...childList: Node.ValueType[]): this {
         for (const child of childList) {
             if (Node.isAppendable(child)) { this.root.appendChild(Node.getNativeNode(child)); continue; }
             if (child instanceof Store) {
@@ -98,7 +98,7 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
      * @param newNode - The node that will replace this one.
      * @returns This node, for chaining.
      */
-    public replaceWith(newNode: Node.NodeValueType): this {
+    public replaceWith(newNode: Node.ValueType): this {
         if (!this.root.parentNode) throw new Error('the node has no parent');
 
         if (newNode instanceof Store) {
@@ -333,7 +333,7 @@ export namespace Node {
         | Node<any>
         | globalThis.Node;
 
-    export type NodeValueType = NodeType | Store<any> | string | number;
+    export type ValueType = NodeType | Store<any> | string | number;
 }
 
 export default Node;

@@ -86,25 +86,11 @@ export abstract class Component<
     public onUnmount?(): void | Promise<void>;
 
     /**
-     * Appends one or more children to the component.
-     * @param childList - The children to append.
-     * @returns This component, for chaining.
-     */
-    public append(...childList: Component.ChildType[]): this {
-        if (childList.length === 0) return this;
-        for (const child of childList) {
-            if (COMPONENT in child) child.appendTo(this.root);
-            else this.root.append(child);
-        }
-        return this;
-    }
-
-    /**
      * Appends and mounts the component into a parent, running the mount lifecycle.
      * @param parent - The parent to append to.
      * @returns This component, for chaining.
      */
-    public appendTo(parent: Element.ElementType): this {
+    public appendTo(parent: Component.ComponentType): this {
         if (this.willMount) this.willMount();
         this.root.appendTo(parent);
         if (this.onMount) this.onMount();
@@ -117,7 +103,7 @@ export abstract class Component<
      * @param element - The element or component to mount in place of this one.
      * @returns This component, for chaining.
      */
-    public replaceWith(element: Component.ChildType): this {
+    public replaceWith(element: Component.ComponentType): this {
         if (this.onUnmount) this.onUnmount();
         if (COMPONENT in element) {
             if (element.willMount) element.willMount();
@@ -138,6 +124,20 @@ export abstract class Component<
     }
 
     /**
+     * Sets event listeners on the component based on an object of event props.
+     * @param eventProps - An object where keys are event names prefixed with 'on:'
+     * and values are the corresponding event listener functions.
+     * @returns void
+     */
+    protected setEventProps(eventProps: Component.EventProps<EventMap>): void {
+        for (const [name, listener] of Object.entries(eventProps)) {
+            if (!name.startsWith('on:')) continue;
+            const event = name.slice(3);
+            this.on(event, listener);
+        }
+    }
+
+    /**
      * Unmounts a component, running its unmount lifecycle and removing it from the DOM.
      * @param component - The component to unmount.
      * @returns void
@@ -149,6 +149,10 @@ export abstract class Component<
 }
 
 export namespace Component {
+    export type EventProps<E extends Events.EventMap> = {
+        [name in keyof E as name extends string ? `on:${name}` : never]?: Events.Listener<E[name]>;
+    }
+
     export type Type = keyof Element.Type | HTMLElement;
     /** Normalizes the supported root element declarations to their HTMLElement type. **/
     export type ComponentElement<
@@ -157,8 +161,11 @@ export namespace Component {
         ? E : E extends keyof Element.Type
         ? Element.Type[E] : never;
 
+    /** The types of components and elements that can be used as the root of a component. **/
+    export type ComponentType = Component<any> | Element.ElementType;
+    
     /** The child kinds a component accepts: other components, elements or HTMLElements. **/
-    export type ChildType = Component | Element.ElementType;
+    export type ValueType = Component | Element.ValueType;
 
     /** The optional lifecycle hooks a component can implement. **/
     export interface Lifecycle {

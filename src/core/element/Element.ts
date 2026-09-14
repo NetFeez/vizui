@@ -485,7 +485,7 @@ export namespace Element {
     export type ElementType = Element<any> | Node.NodeType;
 
     /** The values that can be assigned to an Element. **/
-    export type ElementValueType = Element<any> | Node.NodeValueType;
+    export type ValueType = Element<any> | Node.ValueType;
 
     /** The options applied to an element at creation time. **/
     export interface CreationOptions<T extends HTMLElement> {

@@ -111,7 +111,7 @@ export namespace JSXRuntime {
     export type AttributeValue = Primitive | boolean | Store<string | null>;
     export type Attributes<Props = Record<string, unknown>> = Props & { children?: Child | Child[] };
     export type Primitive = string | number;
-    export type Child = Node.NodeValueType;
+    export type Child = Node.ValueType;
 
     export type FunctionComponent<Props = Record<string, unknown>> = (
         props: Attributes<Props>
