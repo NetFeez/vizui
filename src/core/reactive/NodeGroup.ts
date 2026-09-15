@@ -36,8 +36,7 @@ export class NodeGroup<T = unknown> extends Reactive<T> {
      * preserve the group's slot even when the content is empty, so an emptied
      * group refills in place. The group is mounted with {@link NodeGroup.appendTo}.
      */
-    public constructor(store: Store<T>) {
-        super(store);
+    public constructor(store: Store<T>) { super(store);
         this.vStart = new Comment(`[vizui:group:${this.id}:start]`);
         this.vEnd = new Comment(`[vizui:group:${this.id}:end]`);
         this.vNodes = NodeGroup.toNodes(store.state);

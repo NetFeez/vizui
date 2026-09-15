@@ -5,11 +5,14 @@
  */
 
 import { EventsEmitter } from '../events/Events.js';
+import { WeakEvents } from '../utilities/WeakEvents.js';
 
 export class Store<State> implements Store.IsReadOnly<State> {
     /** The current state of the store. **/
     private vState: State;
     private vEmitter: EventsEmitter<Store.EventMap<State>>;
+    private vWeakEmitter: WeakEvents<Store.EventMap<State>>;
+
 
     /** Whether the store was destroyed and can no longer be used. **/
     private vDestroyed = false;
@@ -26,6 +29,7 @@ export class Store<State> implements Store.IsReadOnly<State> {
         this.vState = initialState;
         this.vIntermediate = internal;
         this.vEmitter = new EventsEmitter();
+        this.vWeakEmitter = new WeakEvents();
     }
 
     /** The current state. **/
@@ -40,8 +44,9 @@ export class Store<State> implements Store.IsReadOnly<State> {
         this.assertNotDestroyed();
         const last = this.vState;
         this.vState = state;
-        if (!this.vIntermediate) this.vEmitter.emit('change', this.vState, last);
-        else this.vEmitter.emit('internal:change', this.vState, last);
+        const event = this.vIntermediate ? 'internal:change' : 'change';
+        this.vEmitter.emit(event, this.vState, last);
+        this.vWeakEmitter.emit(event, this.vState, last);
         return this;
     }
 
@@ -76,6 +81,24 @@ export class Store<State> implements Store.IsReadOnly<State> {
         this.assertNotDestroyed();
         this.vEmitter.on('change', listener);
         return () => this.vEmitter.off('change', listener);
+    }
+
+    /**
+     * Subscribes to state changes without keeping the listener alive from the store side.
+     * @param listener - The listener invoked with the new state.
+     * @returns An unsubscribe function.
+     *
+     * @remarks
+     * The listener is stored in a `WeakRef`. The store never holds it strongly, so the
+     * subscription disappears as soon as nothing else references the listener (and, with it,
+     * whatever it closes over). The caller therefore owns the listener's lifetime and must keep
+     * it reachable for as long as it wants to receive events; a listener referenced only by this
+     * subscription is eligible for collection immediately. Dead entries are pruned lazily on the
+     * next emission of the channel.
+     */
+    public subscribeWeak(listener: Store.Listener<State>): Store.Unsubscribe {
+        this.assertNotDestroyed();
+        return this.vWeakEmitter.on('change', listener);
     }
 
     /**
@@ -129,8 +152,10 @@ export class Store<State> implements Store.IsReadOnly<State> {
         if (this.vDestroyed) throw new Error('Store is already destroyed');
         this.vDestroyed = true;
         this.vEmitter.emit('destroy');
+        this.vWeakEmitter.emit('destroy');
         this.vEmitter.offAll('change');
         this.vEmitter.offAll('internal:change');
+        this.vWeakEmitter.clear();
     }
 
     /**

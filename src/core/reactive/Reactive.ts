@@ -14,6 +14,7 @@ export abstract class Reactive<T> {
     public abstract readonly id: string;
 
     private vUnsubscribe: Store.Unsubscribe | null = null;
+    private vListener: Store.Listener<T> | null = null;
 
     protected constructor(
         public readonly store: Store<T>
@@ -29,10 +30,18 @@ export abstract class Reactive<T> {
      * Subscribes the reactive to the store, triggering future updates.
      *
      * @remarks Can be overridden to add custom subscription logic, but should call `super.subscribe()` to ensure the store subscription is added. Calling it while already subscribed is a no-op.
+     *
+     * The store holds the subscription weakly (see {@link Store.subscribeWeak}): it stores a
+     * `WeakRef` to the listener, so the reactive is never retained by the store. The listener does
+     * not capture this reactive strongly either: it references it through a `WeakRef`, so the
+     * reactive remains collectable even when an engine keeps the listener closure alive. Once the
+     * reactive is unreachable, the store drops the subscription on the next emission.
      */
     public subscribe(): void {
         if (this.vUnsubscribe) return;
-        this.vUnsubscribe = this.store.subscribe(value => this.render(value));
+        const target = new WeakRef(this);
+        this.vListener = (value) => target.deref()?.render(value);
+        this.vUnsubscribe = this.store.subscribeWeak(this.vListener);
     }
 
     /**
@@ -43,7 +52,7 @@ export abstract class Reactive<T> {
     public unsubscribe(): void {
         if (!this.vUnsubscribe) return;
         this.vUnsubscribe();
-        this.vUnsubscribe = null;
+        this.vListener = this.vUnsubscribe = null;
     }
 }
 
