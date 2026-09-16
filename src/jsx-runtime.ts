@@ -46,7 +46,7 @@ export class JSXRuntime {
 
     /** Whether a layout root contains its outlet region. **/
     public static outletContains(root: Element<any>, outlet: Element<any> | Component): boolean {
-        return root.contains(COMPONENT in outlet ? outlet.root : outlet);
+        return root.contains(IsComponent(outlet) ? outlet.root : outlet);
     }
 
     private static setAttributes(element: Element<any>, attributes: JSXRuntime.Attributes): void {
@@ -167,6 +167,8 @@ export import JSX = JSXRuntime.jsx;
 export import Fragment = JSXRuntime.Fragment;
 export import jsxs = JSXRuntime.jsx;
 
+import { IsComponent, IsView } from './support/Contracts.js';
+
 /**
  * A `View` without class syntax: pages with lifecycle hooks but no `extends`.
  * @template Root - The root tag of the view, inferred from `root` when possible.
@@ -179,7 +181,7 @@ export namespace view {
     export interface Options<Root extends Component.Type = 'div'> {
         /** The root element of the view. **/
         root: Element<Component.ComponentElement<Root>>;
-        load?(entry: View.Entry): void | Promise<void>;
+        load?(entry: IsView.Entry): void | Promise<void>;
         render?(data?: unknown): void | Promise<void>;
         willMount?(): void | Promise<void>;
         onMount?(): void | Promise<void>;

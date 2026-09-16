@@ -5,7 +5,7 @@
  * @license Apache-2.0
  */
 
-import { LAYOUT } from '../../support/symbols.js';
+import { LAYOUT, IsLayout } from '../../support/Contracts.js';
 
 import Component from './Component.js';
 import Events from '../../events/Events.js';
@@ -18,7 +18,7 @@ import type Element from '../element/Element.js';
  * @template T - The root element type of the layout.
  * @template EventMap - The event map of the layout.
  */
-export abstract class Layout<T extends Component.Type = HTMLDivElement, eventMap extends Events.EventMap = Events.EventMap> extends Component<T, eventMap> {
+export abstract class Layout<T extends Component.Type = HTMLDivElement, eventMap extends Events.EventMap = Events.EventMap> extends Component<T, eventMap> implements IsLayout {
     public readonly [LAYOUT] = true;
     
     /** The region inside the layout root where routed content mounts. **/

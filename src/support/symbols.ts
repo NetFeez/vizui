@@ -5,7 +5,8 @@
  */
 
 //
-// ========== Contract Symbol ==========
+// ========== Contract Symbols ==========
+//
 
 /** Marks an object as appendable. **/
 export const APPENDABLE = Symbol('vizui.appendable');
@@ -13,12 +14,23 @@ export const APPENDABLE = Symbol('vizui.appendable');
 /** Marks an object as destroyable. **/
 export const DESTROYABLE = Symbol('vizui.destroyable');
 
+/** Marks an object as a View. **/
+export const VIEW = Symbol('vizui.view');
+
+/** Marks an object as a Layout. **/
+export const LAYOUT = Symbol('vizui.layout');
+
+/** The contract discrimination symbols, grouped. **/
 export const CONTRACTS: {
     APPENDABLE: typeof APPENDABLE;
     DESTROYABLE: typeof DESTROYABLE;
+    VIEW: typeof VIEW;
+    LAYOUT: typeof LAYOUT;
 } = {
     APPENDABLE,
-    DESTROYABLE
+    DESTROYABLE,
+    VIEW,
+    LAYOUT
 };
 
 //
@@ -35,25 +47,15 @@ export const ELEMENT = Symbol('vizui.element');
 /** Marks an object as a Component. **/
 export const COMPONENT = Symbol('vizui.component');
 
-/** Marks an object as a View. **/
-export const VIEW = Symbol('vizui.view');
-
-/** Marks an object as a Layout. **/
-export const LAYOUT = Symbol('vizui.layout');
-
 /** The core discrimination symbols, grouped. **/
 export const CORE: {
     NODE: typeof NODE;
     ELEMENT: typeof ELEMENT;
     COMPONENT: typeof COMPONENT;
-    VIEW: typeof VIEW;
-    LAYOUT: typeof LAYOUT;
 } = {
     NODE,
     ELEMENT,
-    COMPONENT,
-    VIEW,
-    LAYOUT
+    COMPONENT
 }
 
 //

@@ -14,6 +14,7 @@ import Router from './router/Router.js';
 import Store from '../state/Store.js';
 
 import { COMPONENT } from '../support/symbols.js';
+import { IsComponent } from '../support/Contracts.js';
 
 export class App<State = unknown> extends Events<App.EventMap> {
     /** The outlet element the application mounts into. **/
@@ -70,7 +71,7 @@ export class App<State = unknown> extends Events<App.EventMap> {
     public render(...content: Component.ValueType[]): this {
         for (const child of content) {
             if (typeof child !== 'object') this.root.append(child);
-            else if (COMPONENT in child) this.root.append(child.root);
+            else if (IsComponent(child)) this.root.append(child.root);
             else this.root.append(child);
         }
         return this;

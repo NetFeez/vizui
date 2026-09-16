@@ -7,6 +7,8 @@
  * @license Apache-2.0
  */
 
+import { IsView } from '../../support/Contracts.js';
+
 import Events from '../../events/Events.js';
 
 import Element from '../element/Element.js';
@@ -32,7 +34,6 @@ import _ShowRule from './rule/ShowRule.js';
 import _LayoutRule from './rule/LayoutRule.js';
 import _ActionRule from './rule/ActionRule.js';
 import _RouterRule from './rule/RouterRule.js';
-import { VIEW } from '../../support/symbols.js';
 
 export class Router extends Events<Router.EventMap> {
 
@@ -443,7 +444,7 @@ export class Router extends Events<Router.EventMap> {
         if (this.vNotFound) {
             const content = this.vNotFound;
             const component = typeof content === 'function' ? await content() : content;
-            if (VIEW in component) {
+            if (IsView(component)) {
                 if (component.load) await component.load(entry);
                 if (component.render) await component.render();
             }

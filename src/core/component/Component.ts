@@ -4,11 +4,9 @@
  * @license Apache-2.0
  */
 
-import { COMPONENT } from '../../support/symbols.js';
-import { APPENDABLE, IsAppendable } from '../../support/Contracts.js';
+import { APPENDABLE, COMPONENT, DESTROYABLE, IsComponent } from '../../support/Contracts.js';
 
 import Element from '../element/Element.js';
-import Node from '../element/Node.js';
 import Events from '../../events/Events.js';
 import CSS from '../../support/CSS.js';
 
@@ -64,12 +62,13 @@ import CSS from '../../support/CSS.js';
 export abstract class Component<
     T extends HTMLElement | keyof Element.Type = HTMLElement,
     EventMap extends Events.EventMap = Events.EventMap,
-> extends Events<EventMap> implements IsAppendable, Component.Lifecycle {
+> extends Events<EventMap> implements IsComponent {
     /** The shared stylesheet loader available to subclasses. **/
     protected static readonly css = CSS;
 
     public readonly [COMPONENT] = true;
     public readonly [APPENDABLE] = true;
+    public readonly [DESTROYABLE] = true;
 
     /** The root element of the component. **/
     public readonly abstract root: Element<Component.ComponentElement<T>>;
@@ -77,13 +76,8 @@ export abstract class Component<
     /** Whether the root element is attached to the document. **/
     public get isConnected(): boolean { return this.root.isConnected; }
 
-    /** Called before the component is mounted into the DOM. **/
     public willMount?(): void | Promise<void>;
-
-    /** Called after the component is mounted into the DOM. **/
     public onMount?(): void | Promise<void>;
-
-    /** Called before the component is removed and its listeners torn down. **/
     public onUnmount?(): void | Promise<void>;
 
     /**
@@ -91,10 +85,10 @@ export abstract class Component<
      * @param parent - The parent to append to.
      * @returns This component, for chaining.
      */
-    public appendTo(parent: Component.ComponentType): this {
-        if (this.willMount) this.willMount();
+    public async appendTo(parent: Component.ComponentType): Promise<this> {
+        if (this.willMount) await this.willMount();
         this.root.appendTo(parent);
-        if (this.onMount) this.onMount();
+        if (this.onMount) await this.onMount();
         return this;
     }
 
@@ -104,12 +98,12 @@ export abstract class Component<
      * @param element - The element or component to mount in place of this one.
      * @returns This component, for chaining.
      */
-    public replaceWith(element: Component.ComponentType): this {
-        if (this.onUnmount) this.onUnmount();
-        if (COMPONENT in element) {
-            if (element.willMount) element.willMount();
+    public async replaceWith(element: Component.ComponentType): Promise<this> {
+        if (this.onUnmount) await this.onUnmount();
+        if (IsComponent(element)) {
+            if (element.willMount) await element.willMount();
             this.root.replaceWith(element.root);
-            if (element.onMount) element.onMount();
+            if (element.onMount) await element.onMount();
         } else this.root.replaceWith(element);
         return this;
     }
@@ -118,8 +112,8 @@ export abstract class Component<
      * Removes the component from the DOM and runs its unmount lifecycle.
      * @returns This component, for chaining.
      */
-    public remove(): this {
-        if (this.onUnmount) this.onUnmount();
+    public async remove(): Promise<this> {
+        if (this.onUnmount) await this.onUnmount();
         this.root.remove();
         return this;
     }
@@ -139,12 +133,20 @@ export abstract class Component<
     }
 
     /**
+     * Destroys the component, cleaning up its resources and removing it from the DOM.
+     * @returns void or a Promise resolving when the component is fully destroyed.
+     */
+    public async destroy(): Promise<void> {
+        await this.root.destroy();
+    }
+
+    /**
      * Unmounts a component, running its unmount lifecycle and removing it from the DOM.
      * @param component - The component to unmount.
      * @returns void
      */
-    public static unmount(component: Component<any>): void {
-        if (component.onUnmount) component.onUnmount();
+    public static async unmount(component: Component<any>): Promise<void> {
+        if (component.onUnmount) await component.onUnmount();
         component.root.remove();
     }
 }
@@ -167,17 +169,5 @@ export namespace Component {
     
     /** The child kinds a component accepts: other components, elements or HTMLElements. **/
     export type ValueType = Component | Element.ValueType;
-
-    /** The optional lifecycle hooks a component can implement. **/
-    export interface Lifecycle {
-        /** Called before the component is mounted into the DOM. **/
-        willMount?(): void | Promise<void>;
-
-        /** Called after the component is mounted into the DOM. **/
-        onMount?(): void | Promise<void>;
-
-        /** Called before the component is removed and its listeners torn down. **/
-        onUnmount?(): void | Promise<void>;
-    }
 }
 export default Component;

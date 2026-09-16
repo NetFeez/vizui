@@ -6,7 +6,8 @@
  * @license Apache-2.0
  */
 
-import { COMPONENT, ELEMENT, RULE, VIEW } from '../../../support/symbols.js';
+import { COMPONENT, ELEMENT, RULE } from '../../../support/symbols.js';
+import { IsComponent, IsView } from '../../../support/Contracts.js';
 
 import Pipeline from '../pipeline/Pipeline.js';
 
@@ -57,7 +58,7 @@ export class ShowRule extends Rule<ShowRule.Content> {
     public async resolve(): Promise<View | Element> {
         const content = this.vContent;
         const resolved = typeof content === 'function' ? await content() : content;
-        if (COMPONENT in resolved || ELEMENT in resolved) return resolved;
+        if (IsComponent(resolved) || ELEMENT in resolved) return resolved;
         throw new Error(`[ShowRule] The content of "${this.vTemplate}" must be a View, Element or lazy factory.`);
     }
 
@@ -66,7 +67,7 @@ export class ShowRule extends Rule<ShowRule.Content> {
             const renderer = pipeState.renderer;
             if (!renderer) throw new Error(`[ShowRule] No renderer available to mount "${this.vTemplate}".`);
             const view = await this.resolve();
-            if (VIEW in view) {
+            if (IsView(view)) {
                 if (this.vLoader) {
                     const data = await this.vLoader(entry);
                     if (view.render) await view.render(data);
