@@ -43,16 +43,16 @@ export class Ownership implements IsDestroyable {
      * If the WeakRef has been garbage collected, it will be skipped.
      * The set is emptied before the targets are destroyed, so cyclic ownership or destruction chains that mutate ownership cannot produce infinite iterations.
      * After calling this method, the instance remains usable and may receive new owned objects.
+     * @returns A promise resolving once every owned target has been destroyed.
      */
-    public destroy(): void {
+    public async destroy(): Promise<void> {
         const targets = [...this.vOwned];
         this.vOwned.clear();
-        let error: unknown = null;
-        for (const item of targets) {
+        await Promise.all(targets.map(async (item) => {
             const target = item instanceof WeakRef ? item.deref() : item;
-            if (!target) continue;
-            target.destroy();
-        }
+            if (!target) return;
+            await target.destroy();
+        }));
     }
 
     /** Drops the owned WeakRef entries whose target has already been collected. */

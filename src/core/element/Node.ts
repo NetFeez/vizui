@@ -270,10 +270,11 @@ export class Node<T extends globalThis.Node = globalThis.Node> extends Ownership
      * the DOM; use {@link remove} for that. After `destroy()`, the node may receive new listeners,
      * reactives and owned objects. Note that DOM containment (`append`/`appendTo`) does not imply
      * ownership: appended children are neither owned nor destroyed automatically.
+     * @returns A promise resolving once the live state and the owned resources are destroyed.
      */
-    public override destroy(): void {
-        this.live.destroy();
-        return super.destroy();
+    public override async destroy(): Promise<void> {
+        await this.live.destroy();
+        await super.destroy();
     }
 
     /**

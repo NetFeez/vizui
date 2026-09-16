@@ -65,15 +65,15 @@ export class LiveStorage {
      * @remarks Each reactive is destroyed, not merely unsubscribed: {@link _Reactive.destroy} detaches
      * the binding and destroys the reactive's derived store, completing the teardown cascade from the
      * node down to the source stores. The reactive pool is then cleared.
+     * @returns A promise resolving once every reactive has been destroyed.
      */
-    public destroy(): void {
+    public async destroy(): Promise<void> {
         for (const entry of this.vTracker.entries) this.vNode.removeEventListener(entry.name, entry.wrapped || entry.listener, entry.options);
         this.vTracker.delete();
 
-        for (const pool of this.vReactive.values()) {
-            for (const reactive of pool) reactive.destroy();
-        }
+        const reactives = [...this.vReactive.values()].flatMap((pool) => [...pool]);
         this.vReactive.clear();
+        await Promise.all(reactives.map((reactive) => reactive.destroy()));
     }
 
     /**
