@@ -20,12 +20,12 @@ import View from '../../component/View.js';
 
 import Rule from './Rule.js';
 
-export class ShowRule extends Rule<ShowRule.Content> {
+export class ShowRule<C extends ShowRule.Content = ShowRule.Content> extends Rule<C> {
     public [RULE.SHOW] = true;
     public readonly identifier = 'show';
 
-    /** The declarative loader declared with `load`. **/
-    protected vLoader: Rule.Loader | null = null;
+    /** The declarative loader declared with `load`, typed with the view data of the route. **/
+    protected vLoader: ShowRule.Loader<ShowRule.DataOf<C>> | null = null;
 
     /**
      * Creates a show route.
@@ -33,19 +33,20 @@ export class ShowRule extends Rule<ShowRule.Content> {
      * @param content - The view, or a factory producing it.
      * @param pipeline - The per-route pipeline.
      */
-    public constructor(template: string, content: ShowRule.Content, pipeline: Pipeline = new Pipeline()) {
+    public constructor(template: string, content: C, pipeline: Pipeline = new Pipeline()) {
         super(template, content, pipeline);
     }
 
     /** The declarative loader declared with `.load(...)` when present. **/
-    public get loader(): Rule.Loader | null { return this.vLoader; }
+    public get loader(): ShowRule.Loader<ShowRule.DataOf<C>> | null { return this.vLoader; }
 
     /**
      * Declares a loader for this route. When present it wins over `View.load`.
+     * The loader return type is inferred from the data painted by the view of the route.
      * @param loader - The loader producing the data delivered to `View.render`.
      * @returns This route, for chaining.
      */
-    public load(loader: Rule.Loader): this {
+    public load(loader: ShowRule.Loader<ShowRule.DataOf<C>>): this {
         this.vLoader = loader;
         return this;
     }
@@ -55,7 +56,7 @@ export class ShowRule extends Rule<ShowRule.Content> {
      * @returns The resolved view or element tree.
      * @throws When the content does not produce a View or Element.
      */
-    public async resolve(): Promise<View | Element> {
+    public async resolve(): Promise<View<any, any, ShowRule.DataOf<C>> | Element> {
         const content = this.vContent;
         const resolved = typeof content === 'function' ? await content() : content;
         if (IsComponent(resolved) || ELEMENT in resolved) return resolved;
@@ -82,8 +83,20 @@ export class ShowRule extends Rule<ShowRule.Content> {
 }
 
 export namespace ShowRule {
+    export type ContentObject = View | Element;
     /** The content kinds a show route accepts: views, element trees or lazy factories. **/
-    export type Content = View | Element | (() => View | Element | Promise<View | Element>);
+    export type Content = ContentObject | (() => ContentObject | Promise<ContentObject>);
+
+    /** The data painted by the view of a show route, inferred from the view's
+     * `render` signature or, failing that, its `RenderData` type argument. **/
+    export type DataOf<V> =
+        V extends { render?(data: infer D, ...rest: never[]): unknown } ? D | undefined :
+        V extends View<infer T, infer E, infer D> ? D | undefined :
+        V extends (...args: never[]) => infer R ? DataOf<Awaited<R>> :
+        unknown;
+
+    /** The loader producing the data delivered to the view of the route. **/
+    export type Loader<D> = (entry: Router.Entry) => D | Promise<D>;
 }
 
 export default ShowRule;

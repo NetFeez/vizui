@@ -194,9 +194,6 @@ export namespace Rule {
         [name: string]: string | undefined;
     }
 
-    /** The function producing the data delivered to a view loader. **/
-    export type Loader = (entry: Router.Entry) => unknown | Promise<unknown>;
-
     /** Any rule kind, plain or delegating. **/
     export type Any = Rule | RouterRule;
 }

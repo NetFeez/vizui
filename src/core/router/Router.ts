@@ -191,9 +191,9 @@ export class Router extends Events<Router.EventMap> {
      * @param template - The url template of the route.
      * @param content - The view, or a factory producing it.
      * @param pipeline - The per-route pipeline.
-     * @returns The registered route.
+     * @returns The registered route. Its loader is typed with the data painted by the view.
      */
-    public show(template: string, content: _ShowRule.Content, pipeline: _Pipeline = new _Pipeline()): _ShowRule {
+    public show<C extends _ShowRule.Content>(template: string, content: C, pipeline: _Pipeline = new _Pipeline()): _ShowRule<C> {
         const route = new _ShowRule(this.prefix(template), content, pipeline);
         this.addRule(route);
         return route;

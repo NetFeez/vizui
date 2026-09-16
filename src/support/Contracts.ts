@@ -88,10 +88,10 @@ export function IsLayout<T>(object: T): object is Extract<T, IsLayout> {
 
 export { VIEW };
 
-export interface IsView extends IsComponent {
+export interface IsView<Data extends unknown = unknown> extends IsComponent {
     readonly [VIEW]: true;
     load?(entry: IsView.Entry): void | Promise<void>;
-    render?(data?: unknown): void | Promise<void>;
+    render?(data?: Data): void | Promise<void>;
 }
 
 export namespace IsView {
