@@ -5,7 +5,7 @@
  * @license Apache-2.0
  */
 
-import { LAYOUT } from '../symbols.js';
+import { LAYOUT } from '../../support/symbols.js';
 
 import Component from './Component.js';
 import Events from '../../events/Events.js';

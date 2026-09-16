@@ -1,4 +1,4 @@
-import { COMPONENT } from './core/symbols.js';
+import { COMPONENT } from './support/symbols.js';
 
 import Element from './core/element/Element.js';
 import { Node } from './core/element/Node.js';

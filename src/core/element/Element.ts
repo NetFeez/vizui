@@ -4,7 +4,7 @@
  * @license Apache-2.0
  */
 
-import { APPENDABLE, ELEMENT } from '../symbols.js';
+import { APPENDABLE, ELEMENT } from '../../support/symbols.js';
 
 import Events from '../../events/Events.js';
 import DomObserver from './DomObserver.js';

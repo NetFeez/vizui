@@ -4,12 +4,12 @@
  * @license Apache-2.0
  */
 
-import { APPENDABLE, COMPONENT } from '../symbols.js';
+import { APPENDABLE, COMPONENT } from '../../support/symbols.js';
 
 import Element from '../element/Element.js';
 import Node from '../element/Node.js';
 import Events from '../../events/Events.js';
-import CSS from '../../utilities/CSS.js';
+import CSS from '../../support/CSS.js';
 
 /**
  * Base class to create typed components with lifecycle and teardown.

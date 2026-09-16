@@ -22,7 +22,7 @@
  * @license Apache-2.0
  */
 
-import { GUARD } from '../../symbols.js';
+import { GUARD } from '../../../support/symbols.js';
 
 import Guard from './Guard.js';
 

@@ -6,7 +6,7 @@
  * @license Apache-2.0
  */
 
-import { RULE } from '../../symbols.js';
+import { RULE } from '../../../support/symbols.js';
 
 import Pipeline from '../pipeline/Pipeline.js';
 

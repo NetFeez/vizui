@@ -8,7 +8,7 @@
  * @license Apache-2.0
  */
 
-import { GUARD } from '../../symbols.js';
+import { GUARD } from '../../../support/symbols.js';
 
 import type Router from '../Router.js';
 import type Tracker from '../Tracker.js';

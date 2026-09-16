@@ -13,7 +13,7 @@ import Config from './Config.js';
 import Router from './router/Router.js';
 import Store from '../state/Store.js';
 
-import { COMPONENT } from './symbols.js';
+import { COMPONENT } from '../support/symbols.js';
 
 export class App<State = unknown> extends Events<App.EventMap> {
     /** The outlet element the application mounts into. **/

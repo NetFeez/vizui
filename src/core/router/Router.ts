@@ -32,7 +32,7 @@ import _ShowRule from './rule/ShowRule.js';
 import _LayoutRule from './rule/LayoutRule.js';
 import _ActionRule from './rule/ActionRule.js';
 import _RouterRule from './rule/RouterRule.js';
-import { VIEW } from '../symbols.js';
+import { VIEW } from '../../support/symbols.js';
 
 export class Router extends Events<Router.EventMap> {
 

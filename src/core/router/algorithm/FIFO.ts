@@ -5,7 +5,7 @@
  * @license Apache-2.0
  */
 
-import { RULE } from '../../symbols.js';
+import { RULE } from '../../../support/symbols.js';
 
 import type RouterRule from '../rule/RouterRule.js';
 

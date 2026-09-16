@@ -4,7 +4,7 @@
  * @license Apache-2.0
  */
 
-import { NODE, APPENDABLE } from '../symbols.js';
+import { NODE, APPENDABLE } from '../../support/symbols.js';
 
 import LiveStorage from '../LiveStorage.js';
 import EventTracker from './EventTracker.js';

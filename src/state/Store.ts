@@ -5,7 +5,7 @@
  */
 
 import { EventsEmitter } from '../events/Events.js';
-import { WeakEvents } from '../utilities/WeakEvents.js';
+import { WeakEvents } from '../support/WeakEvents.js';
 
 export class Store<State> implements Store.IsReadOnly<State> {
     /** The current state of the store. **/

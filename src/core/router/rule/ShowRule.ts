@@ -6,7 +6,7 @@
  * @license Apache-2.0
  */
 
-import { COMPONENT, ELEMENT, RULE, VIEW } from '../../symbols.js';
+import { COMPONENT, ELEMENT, RULE, VIEW } from '../../../support/symbols.js';
 
 import Pipeline from '../pipeline/Pipeline.js';
 
