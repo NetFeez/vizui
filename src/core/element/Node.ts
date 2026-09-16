@@ -263,9 +263,13 @@ export class Node<T extends globalThis.Node = globalThis.Node> extends Ownership
     }
 
     /**
-     * Destroys the live bindings of this node: detaches its event listeners
-     * and unsubscribes its reactives.
-     * @returns This node, for chaining.
+     * Destroys the current resources and lifecycle of this node: detaches its event
+     * listeners, destroys its live bindings (reactives) and releases its owned objects.
+     *
+     * @remarks `destroy()` terminates the current lifecycle resources of the node. It does not modify
+     * the DOM; use {@link remove} for that. After `destroy()`, the node may receive new listeners,
+     * reactives and owned objects. Note that DOM containment (`append`/`appendTo`) does not imply
+     * ownership: appended children are neither owned nor destroyed automatically.
      */
     public override destroy(): void {
         this.live.destroy();

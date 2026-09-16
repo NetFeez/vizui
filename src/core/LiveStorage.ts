@@ -1,6 +1,6 @@
 /**
  * @author NetFeez <netfeez.dev@gmail.com>.
- * @description Holds the live bindings of a DOM node: its event tracker and reactive pool.
+ * @description Manages the intrinsic live state of a native DOM node: its event tracker and reactive pool.
  * @license Apache-2.0
  */
 
@@ -8,6 +8,7 @@ import EventTracker from './element/EventTracker.js';
 import _Reactive from './reactive/Reactive.js';
 
 import Store from '../state/Store.js';
+
 const REGISTRY = Symbol('vizui/live.registry');
 
 export class LiveStorage {
@@ -38,9 +39,12 @@ export class LiveStorage {
     }
 
     /**
-     * Unregisters the reactives bound to a store, unsubscribing matching ones.
+     * Unregisters the reactives bound to a store, detaching matching ones without destroying them.
      * @param store - The store the reactives are bound to.
      * @param filter - Optional type or predicate to select which reactives to detach.
+     *
+     * @remarks This is a detach operation: the matching reactives are unsubscribed and removed from the
+     * pool. Their derived stores and lifecycle`s are not terminated; use {@link destroy} for that.
      */
     public unregister(store: Store<any>, filter?: _Reactive.Type | _Reactive.Filter): void {
         const pool = this.vReactive.get(store);
@@ -55,15 +59,19 @@ export class LiveStorage {
     }
 
     /**
-     * Destroys the live bindings of the node: detaches event listeners,
-     * unsubscribes the reactives and empties the reactive pool.
+     * Destroys the live state of the node: detaches the tracked event listeners
+     * and destroys every reactive in the pool.
+     *
+     * @remarks Each reactive is destroyed, not merely unsubscribed: {@link _Reactive.destroy} detaches
+     * the binding and destroys the reactive's derived store, completing the teardown cascade from the
+     * node down to the source stores. The reactive pool is then cleared.
      */
     public destroy(): void {
         for (const entry of this.vTracker.entries) this.vNode.removeEventListener(entry.name, entry.wrapped || entry.listener, entry.options);
         this.vTracker.delete();
 
         for (const pool of this.vReactive.values()) {
-            for (const reactive of pool) reactive.unsubscribe();
+            for (const reactive of pool) reactive.destroy();
         }
         this.vReactive.clear();
     }

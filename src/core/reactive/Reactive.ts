@@ -53,6 +53,9 @@ export abstract class Reactive<T> implements IsDestroyable {
      * Detaches the reactive from the store, stopping future updates.
      *
      * @remarks Can be overridden to add custom cleanup logic, but should call `super.unsubscribe()` to ensure the store subscription is removed.
+     *
+     * Unlike {@link destroy}, this is a detach operation: the derived store is kept, so the reactive
+     * can later {@link subscribe} again to resume the binding.
      */
     public unsubscribe(): void {
         if (!this.vUnsubscribe) return;
@@ -61,12 +64,17 @@ export abstract class Reactive<T> implements IsDestroyable {
     }
 
     /**
-     * Destroys the reactive, unsubscribing it from the store and releasing any resources.
+     * Destroys the reactive, unsubscribing it from the store and destroying its derived store.
      *
-     * @remarks Can be overridden to add custom cleanup logic, but should call `super.destroy()` to ensure the store subscription is removed.
+     * @remarks Can be overridden to add custom cleanup logic, but should call `super.destroy()` to ensure both the store subscription and the derived store are released.
+     *
+     * `destroy()` terminates the current lifecycle of the reactive. Destroying the derived store also
+     * detaches it from the source store, completing the teardown cascade. The previous subscription is
+     * neither restored nor preserved.
      */
     public destroy(): void {
         this.unsubscribe();
+        this.store.destroy();
     }
 }
 
