@@ -4,21 +4,26 @@
  * @license Apache-2.0
  */
 
+import { DESTROYABLE, IsDestroyable } from '../../support/Contracts.js';
+
 import Store from '../../state/Store.js';
 
-export abstract class Reactive<T> {
+export abstract class Reactive<T> implements IsDestroyable {
+    public readonly [DESTROYABLE] = true;
+
     /** The kind of target the reactive renders into. **/
     public abstract readonly type: Reactive.Type;
 
     /** The instance id of the reactive, unique per binding. **/
     public abstract readonly id: string;
+    public readonly store: Store<T>;
 
     private vUnsubscribe: Store.Unsubscribe | null = null;
     private vListener: Store.Listener<T> | null = null;
 
-    protected constructor(
-        public readonly store: Store<T>
-    ) {}
+    protected constructor(store: Store<T>) {
+        this.store = store.select(s => s);
+    }
 
     /**
      * Re-renders the reactive from a new state.
@@ -53,6 +58,15 @@ export abstract class Reactive<T> {
         if (!this.vUnsubscribe) return;
         this.vUnsubscribe();
         this.vListener = this.vUnsubscribe = null;
+    }
+
+    /**
+     * Destroys the reactive, unsubscribing it from the store and releasing any resources.
+     *
+     * @remarks Can be overridden to add custom cleanup logic, but should call `super.destroy()` to ensure the store subscription is removed.
+     */
+    public destroy(): void {
+        this.unsubscribe();
     }
 }
 

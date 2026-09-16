@@ -4,13 +4,12 @@
  * @license Apache-2.0
  */
 
-import { APPENDABLE, ELEMENT } from '../../support/symbols.js';
+import { ELEMENT } from '../../support/symbols.js';
 
-import Events from '../../events/Events.js';
-import DomObserver from './DomObserver.js';
 import Node from './Node.js';
-import Attribute from '../reactive/Attribute.js';
 import Store from '../../state/Store.js';
+import Attribute from '../reactive/Attribute.js';
+import DomObserver from './DomObserver.js';
 
 const OBSERVER_MAP = Symbol('vizui.element/observer');
 
@@ -474,11 +473,6 @@ export namespace Element {
         export type Selector = keyof Type
         export type Extended =Selector | (string & {});
         export type Result<T extends Extended> = T extends Selector ? Type[T] : HTMLElement;
-    }
-
-    export interface IsAppendable extends Node.IsAppendable {
-        readonly [APPENDABLE]: true;
-        root: Element<any> | HTMLElement;
     }
 
     /** The children accepted by an Element. **/

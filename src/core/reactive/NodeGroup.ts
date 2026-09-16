@@ -5,6 +5,7 @@
  */
 
 import type Store from '../../state/Store.js';
+import { IsAppendable } from '../../support/Contracts.js';
 
 import Node from '../element/Node.js';
 import Reactive from './Reactive.js';
@@ -84,20 +85,15 @@ export class NodeGroup<T = unknown> extends Reactive<T> {
     }
 
     /**
-     * Removes the group from the DOM and detaches it from its store.
-     * @returns This group, for chaining.
+     * Converts a value into an array of DOM nodes, flattening arrays and wrapping non-nodes in `Text` nodes.
+     * @param value - The value to convert.
+     * @returns An array of DOM nodes.
      */
-    public destroy(): this {
-        this.remove();
-        this.unsubscribe();
-        return this;
-    }
-
     private static toNodes(value: unknown): globalThis.Node[] {
         const list = Array.isArray(value) ? value : [value];
         return list.flatMap((item) => {
             if (Array.isArray(item)) return NodeGroup.toNodes(item);
-            if (Node.isAppendable(item)) return [Node.getNativeNode(item)];
+            if (IsAppendable(item)) return [Node.getNativeNode(item)];
             return [new Text(String(item))];
         });
     }

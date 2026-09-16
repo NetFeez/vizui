@@ -5,11 +5,26 @@
  */
 
 //
-// ========== Core Symbols ==========
-//
+// ========== Contract Symbol ==========
 
 /** Marks an object as appendable. **/
 export const APPENDABLE = Symbol('vizui.appendable');
+
+/** Marks an object as destroyable. **/
+export const DESTROYABLE = Symbol('vizui.destroyable');
+
+export const CONTRACTS: {
+    APPENDABLE: typeof APPENDABLE;
+    DESTROYABLE: typeof DESTROYABLE;
+} = {
+    APPENDABLE,
+    DESTROYABLE
+};
+
+//
+// ========== Core Symbols ==========
+//
+
 
 /** Marks an object as a Node. **/
 export const NODE = Symbol('vizui.node');
@@ -29,14 +44,12 @@ export const LAYOUT = Symbol('vizui.layout');
 /** The core discrimination symbols, grouped. **/
 export const CORE: {
     NODE: typeof NODE;
-    APPENDABLE: typeof APPENDABLE;
     ELEMENT: typeof ELEMENT;
     COMPONENT: typeof COMPONENT;
     VIEW: typeof VIEW;
     LAYOUT: typeof LAYOUT;
 } = {
     NODE,
-    APPENDABLE,
     ELEMENT,
     COMPONENT,
     VIEW,
@@ -108,10 +121,12 @@ export const GUARD: {
 
 /** Every discrimination symbol of VizUI, grouped by concept. **/
 export const symbols: {
+    CONTRACTS: typeof CONTRACTS;
     CORE: typeof CORE;
     RULE: typeof RULE;
     GUARD: typeof GUARD;
 } = {
+    CONTRACTS,
     CORE,
     RULE,
     GUARD,

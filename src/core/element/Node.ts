@@ -4,15 +4,19 @@
  * @license Apache-2.0
  */
 
-import { NODE, APPENDABLE } from '../../support/symbols.js';
+import type Reactive from '../reactive/Reactive.js';
+
+import { DESTROYABLE, NODE } from '../../support/symbols.js';
+import { APPENDABLE, IsAppendable, IsDestroyable } from '../../support/Contracts.js';
 
 import LiveStorage from '../LiveStorage.js';
+import Ownership from '../../support/Ownership.js';
 import EventTracker from './EventTracker.js';
-import Reactive from '../reactive/Reactive.js';
 import NodeGroup from '../reactive/NodeGroup.js';
 import Store from '../../state/Store.js';
 
-export class Node<T extends globalThis.Node = globalThis.Node> implements Node.IsAppendable {
+export class Node<T extends globalThis.Node = globalThis.Node> extends Ownership implements IsDestroyable, IsAppendable {
+    public readonly [DESTROYABLE] = true;
     public readonly [APPENDABLE] = true;
     public readonly [NODE] = true;
 
@@ -26,7 +30,7 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
      * Wraps an existing DOM node.
      * @param node - The node to wrap.
      */
-    public constructor(node: T) {
+    public constructor(node: T) { super();
         if (!Node.isNative(node)) throw new Error('the node is not a Node');
         this.root = node;
         this.live = LiveStorage.of(this.root);
@@ -62,7 +66,7 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
      */
     public append(...childList: Node.ValueType[]): this {
         for (const child of childList) {
-            if (Node.isAppendable(child)) { this.root.appendChild(Node.getNativeNode(child)); continue; }
+            if (IsAppendable(child)) { this.root.appendChild(Node.getNativeNode(child)); continue; }
             if (child instanceof Store) {
                 const group = new NodeGroup(child);
                 group.appendTo(this.root);
@@ -112,7 +116,7 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
         }
 
         let raw: globalThis.Node;
-        if (Node.isAppendable(newNode)) raw = Node.getNativeNode(newNode);
+        if (IsAppendable(newNode)) raw = Node.getNativeNode(newNode);
         else raw = new Text(String(newNode));
 
         this.root.parentNode.replaceChild(raw, this.root);
@@ -237,16 +241,6 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
     }
 
     /**
-     * Destroys the live bindings of this node: detaches its event listeners
-     * and unsubscribes its reactives.
-     * @returns This node, for chaining.
-     */
-    public destroy(): this {
-        this.live.destroy();
-        return this;
-    }
-
-    /**
      * Removes all reactive subscriptions from this node.
      * @returns This node, for chaining.
      */
@@ -269,6 +263,16 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
     }
 
     /**
+     * Destroys the live bindings of this node: detaches its event listeners
+     * and unsubscribes its reactives.
+     * @returns This node, for chaining.
+     */
+    public override destroy(): void {
+        this.live.destroy();
+        return super.destroy();
+    }
+
+    /**
      * Checks whether a given object is a Node wrapper.
      * @param object - The object to check.
      * @returns True if the object is a Node wrapper, false otherwise.
@@ -287,16 +291,6 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
     }
 
     /**
-     * Checks whether a given object is appendable (has a root DOM node).
-     * @param object - The object to check.
-     * @returns True if the object is appendable, false otherwise.
-     */
-    public static isAppendable(object: unknown): object is Node.NodeType {
-        if (typeof object !== 'object' || object === null) return false;
-        return APPENDABLE in object || object instanceof globalThis.Node;
-    }
-
-    /**
      * Gets the native DOM node from a Node wrapper or appendable object.
      * @param node - The node to unwrap.
      * @returns The raw DOM node.
@@ -304,7 +298,7 @@ export class Node<T extends globalThis.Node = globalThis.Node> implements Node.I
     public static getNativeNode(node: Node.NodeType): globalThis.Node {
         if (Node.isNative(node)) return node;
         if (Node.isNode(node)) return node.root;
-        if (Node.isAppendable(node)) return Node.getNativeNode(node.root);
+        if (IsAppendable(node)) return Node.getNativeNode(node.root);
         throw new Error('The node is not a valid DOM node.');
     }
 }
@@ -320,17 +314,11 @@ export namespace Node {
         }
     }
     export type Listener<T extends globalThis.Node> = Listener.Listener<T> | Listener.ListenerObject<T>;
-    
-    /** The contract shared by everything that can receive appended children. **/
-    export interface IsAppendable {
-        readonly [APPENDABLE]: true;
-        readonly root: IsAppendable | Node<any> | globalThis.Node;
-    }
 
     /** The values accepted as children by a Node. **/
     export type NodeType =
-        | IsAppendable
         | Node<any>
+        | IsAppendable
         | globalThis.Node;
 
     export type ValueType = NodeType | Store<any> | string | number;

@@ -4,7 +4,8 @@
  * @license Apache-2.0
  */
 
-import { APPENDABLE, COMPONENT } from '../../support/symbols.js';
+import { COMPONENT } from '../../support/symbols.js';
+import { APPENDABLE, IsAppendable } from '../../support/Contracts.js';
 
 import Element from '../element/Element.js';
 import Node from '../element/Node.js';
@@ -63,7 +64,7 @@ import CSS from '../../support/CSS.js';
 export abstract class Component<
     T extends HTMLElement | keyof Element.Type = HTMLElement,
     EventMap extends Events.EventMap = Events.EventMap,
-> extends Events<EventMap> implements Node.IsAppendable, Component.Lifecycle {
+> extends Events<EventMap> implements IsAppendable, Component.Lifecycle {
     /** The shared stylesheet loader available to subclasses. **/
     protected static readonly css = CSS;
 
