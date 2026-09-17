@@ -95,7 +95,7 @@ export interface IsView<Data extends unknown = unknown> extends IsComponent {
 }
 
 export namespace IsView {
-        export interface Entry {
+    export interface Entry {
         /** The normalized path of the navigation. **/
         path: string;
 

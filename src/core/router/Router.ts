@@ -705,8 +705,11 @@ export namespace Router {
     /** Arbitrary data attached to a navigation. **/
     export type State = Record<string, unknown>;
 
+    export type Content = View | Component | Element;
+
     /** The fallback content kinds mounted when no route matches. **/
-    export type NotFoundContent = View | Component | Element | (() => View | Component | Element | Promise<View |   Component | Element>);
+    export type NotFoundContent = Content | (() => Content | Promise<Content>);
+    // export type NotFoundContent = View | Component | Element | (() => View | Component | Element | Promise<View | Component | Element>);
 
     /** A fully parsed navigation entry. **/
     export interface Entry {

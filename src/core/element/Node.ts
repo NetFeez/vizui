@@ -312,10 +312,10 @@ export namespace Node {
     export import Tracker = EventTracker;
     export namespace Listener {
         export interface Listener<T extends globalThis.Node = globalThis.Node> {
-            (this: Node<T>, event: Event): void;
+            (this: Node<globalThis.Node>, event: Event): void;
         }
         export interface ListenerObject<T extends globalThis.Node = globalThis.Node> {
-            handleEvent: (this: Node<T>, event: Event) => void;
+            handleEvent: (this: Node<globalThis.Node>, event: Event) => void;
         }
     }
     export type Listener<T extends globalThis.Node> = Listener.Listener<T> | Listener.ListenerObject<T>;
